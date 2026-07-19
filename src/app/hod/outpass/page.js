@@ -13,6 +13,7 @@ export default function HodOutpassPage() {
   const [remarks, setRemarks] = useState('');
   const [actioning, setActioning] = useState(false);
   const [toast, setToast] = useState('');
+  const [successId, setSuccessId] = useState(null);
   const [userRole, setUserRole] = useState('hod');
   const [notifs, setNotifs] = useState([]);
   const [qrUrl, setQrUrl] = useState(null);
@@ -74,19 +75,31 @@ export default function HodOutpassPage() {
   const handleAction = async (id, action) => {
     setActioning(true);
     const token = localStorage.getItem('token');
-    const res = await fetch(`/api/outpass/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action, remarks }),
-    });
-    if (res.ok) {
-      showToast(action === 'approve' ? '✅ Outpass fully approved! Student notified.' : '❌ Outpass rejected.');
-      setSelected(null); setRemarks('');
-      load('pending');
-    } else {
-      const d = await res.json(); showToast('❌ ' + d.error);
+    try {
+      const res = await fetch(`/api/outpass/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action, remarks }),
+      });
+      if (res.ok) {
+        if (action === 'approve') {
+          setSuccessId(id);
+          showToast('✅ Request has been passed to the Principal.');
+        } else {
+          showToast('❌ Outpass rejected.');
+        }
+        setRemarks('');
+        load('pending');
+      } else {
+        let errorMsg = `Server error (${res.status})`;
+        try { const d = await res.json(); errorMsg = d.error || errorMsg; } catch {}
+        showToast('❌ ' + errorMsg);
+      }
+    } catch (err) {
+      showToast('❌ Network error. Please try again.');
+    } finally {
+      setActioning(false);
     }
-    setActioning(false);
   };
 
   // For HOD: show outpasses where teacher approved + hod pending
@@ -170,6 +183,7 @@ export default function HodOutpassPage() {
         @keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
         .toast{position:fixed;bottom:2rem;right:2rem;z-index:200;background:#0d2240;border:1px solid rgba(251,191,36,.3);border-radius:12px;padding:13px 18px;font-size:13.5px;font-weight:600;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.4);animation:si .3s ease}
         @keyframes si{from{transform:translateX(30px);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes spin{to{transform:rotate(360deg)}}
         .qr-section{margin-top:1.2rem;padding:16px;background:rgba(74,222,128,.04);border:1px solid rgba(74,222,128,.15);border-radius:14px;text-align:center}
         .qr-section-title{font-size:13px;font-weight:700;color:#86efac;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px}
         .qr-wrap{display:inline-block;padding:12px;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.2);margin-bottom:10px}
@@ -270,20 +284,27 @@ export default function HodOutpassPage() {
                     <div key={k} className="det-row"><span className="dk">{k}</span><span className="dv">{v}</span></div>
                   ))}
 
-                  {selected.hod_status === 'pending' && selected.teacher_status === 'approved' && (
+                  {selected.hod_status === 'pending' && selected.teacher_status === 'approved' && successId !== selected.id && (
                     <>
                       <label className="rl">Your Remarks (optional)</label>
                       <textarea className="ri" placeholder="Add remarks for your decision..."
                         value={remarks} onChange={e=>setRemarks(e.target.value)} rows={3}/>
                       <div className="act-btns">
                         <button className="btn-ap" disabled={actioning} onClick={()=>handleAction(selected.id,'approve')}>
-                          {actioning?'…':'✅ Approve'}
+                          {actioning ? <span style={{display:'flex',alignItems:'center',gap:6,justifyContent:'center'}}><span style={{width:16,height:16,border:'2px solid rgba(74,222,128,.3)',borderTopColor:'#4ade80',borderRadius:'50%',animation:'spin .7s linear infinite',display:'inline-block'}}/> Processing</span> : '✅ Approve'}
                         </button>
                         <button className="btn-rj" disabled={actioning} onClick={()=>handleAction(selected.id,'reject')}>
-                          {actioning?'…':'❌ Reject'}
+                          {actioning ? '…' : '❌ Reject'}
                         </button>
                       </div>
                     </>
+                  )}
+                  {selected.hod_status === 'pending' && successId === selected.id && (
+                    <div style={{marginTop:'1rem',padding:'16px',background:'linear-gradient(135deg,rgba(74,222,128,.12),rgba(74,222,128,.06))',border:'1px solid rgba(74,222,128,.3)',borderRadius:12,fontSize:13.5,color:'#86efac',textAlign:'center',lineHeight:1.6}}>
+                      <div style={{fontSize:22,marginBottom:6}}>✅</div>
+                      <div style={{fontWeight:800,fontSize:14,color:'#4ade80',marginBottom:4}}>Request Approved!</div>
+                      <div style={{color:'rgba(255,255,255,.7)'}}>The request has been passed to the Principal for final approval.</div>
+                    </div>
                   )}
                   {selected.hod_status === 'approved' && (
                     <>

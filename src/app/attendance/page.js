@@ -181,14 +181,7 @@ export default function AttendancePage() {
                           <div className="ds"><div className="ds-n" style={{color:gc(selected.percentage),fontSize:'1rem'}}>{gs(selected.percentage)}</div><div className="ds-l">Status</div></div>
                         </div>
                       </div>
-                      <div className={`advice ${selected.percentage>=75?'adv-safe':selected.percentage>=60?'adv-risk':'adv-danger'}`}>
-                        {selected.percentage>=75
-                          ? `✅ You're safe! You can miss up to ${canMiss(selected)} more class${canMiss(selected)!==1?'es':''} and still stay above 75%.`
-                          : selected.percentage>=60
-                          ? `⚠️ At risk! Attend the next ${needed(selected)} consecutive classes to reach 75%.`
-                          : `🚨 Danger! You need ${needed(selected)} more classes urgently to reach 75%.`
-                        }
-                      </div>
+
                       {selected.records?.length > 0 && (
                         <>
                           <div className="cal-title">Recent Classes ({selected.records.length} total)</div>

@@ -12,14 +12,12 @@ const NAV_STUDENT = [
 const NAV_TEACHER = [
   { href: '/teacher/dashboard', label: 'Dashboard', ico: '🏠' },
   { href: '/teacher/outpass', label: 'Outpass Requests', ico: '🚪', badge: true },
-  { href: '/staff/outpasses', label: 'My Outpasses', ico: '🎫' },
   { href: '/teacher/students', label: 'Students', ico: '🎓' },
   { href: '/notifications', label: 'Notifications', ico: '🔔', badge: true },
 ];
 const NAV_HOD = [
   { href: '/hod/dashboard', label: 'Dashboard', ico: '🏠' },
   { href: '/hod/outpass', label: 'Outpass Approvals', ico: '🚪', badge: true },
-  { href: '/staff/outpasses', label: 'My Outpasses', ico: '🎫' },
   { href: '/hod/students', label: 'Students Monitor', ico: '🎓' },
   { href: '/notifications', label: 'Notifications', ico: '🔔', badge: true },
 ];

@@ -44,8 +44,8 @@ export async function GET(request) {
 export async function POST(request) {
   const user = verifyToken(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!['student', 'class_teacher', 'hod'].includes(user.role)) {
-    return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+  if (user.role !== 'student') {
+    return NextResponse.json({ error: 'Only students can create outpass requests' }, { status: 403 });
   }
 
   try {
@@ -54,50 +54,19 @@ export async function POST(request) {
     if (!reason || !destination || !from_date || !to_date)
       return NextResponse.json({ error: 'Required fields missing' }, { status: 400 });
 
-    let result;
-    if (user.role === 'student') {
-      const student = db.prepare('SELECT * FROM students WHERE user_id=?').get(user.userId);
-      if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+    const student = db.prepare('SELECT * FROM students WHERE user_id=?').get(user.userId);
+    if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
 
-      result = db.prepare(`
-        INSERT INTO outpasses(student_id,user_id,reason,destination,from_date,to_date,from_time,to_time,status,teacher_status,hod_status,principal_status)
-        VALUES(?,?,?,?,?,?,?,?,'pending_teacher','pending','pending','pending')
-      `).run(student.id, user.userId, reason, destination, from_date, to_date, from_time||'', to_time||'');
+    const result = db.prepare(`
+      INSERT INTO outpasses(student_id,user_id,reason,destination,from_date,to_date,from_time,to_time,status,teacher_status,hod_status,principal_status)
+      VALUES(?,?,?,?,?,?,?,?,'pending_teacher','pending','pending','pending')
+    `).run(student.id, user.userId, reason, destination, from_date, to_date, from_time||'', to_time||'');
 
-      // Notify the class teacher of this department
-      const teacher = db.prepare(`SELECT id FROM users WHERE department=? AND role='class_teacher' LIMIT 1`).get(user.department);
-      if (teacher) {
-        safeNotify(db, teacher.id, 'New Outpass Request',
-          `${user.name} has submitted an outpass request — ${reason}`, 'action', result.lastInsertRowid);
-      }
-
-    } else if (user.role === 'class_teacher') {
-      // Teacher outpass: goes to HOD first
-      result = db.prepare(`
-        INSERT INTO outpasses(student_id,user_id,reason,destination,from_date,to_date,from_time,to_time,status,teacher_status,hod_status,principal_status)
-        VALUES(NULL,?,?,?,?,?,?,?,'pending_hod','approved','pending','pending')
-      `).run(user.userId, reason, destination, from_date, to_date, from_time||'', to_time||'');
-
-      // Notify HOD of the department
-      const hod = db.prepare(`SELECT id FROM users WHERE department=? AND role='hod' LIMIT 1`).get(user.department);
-      if (hod) {
-        safeNotify(db, hod.id, 'New Teacher Outpass Request',
-          `Teacher ${user.name} has submitted an outpass request — ${reason}`, 'action', result.lastInsertRowid);
-      }
-
-    } else {
-      // HOD outpass: goes directly to Principal
-      result = db.prepare(`
-        INSERT INTO outpasses(student_id,user_id,reason,destination,from_date,to_date,from_time,to_time,status,teacher_status,hod_status,principal_status)
-        VALUES(NULL,?,?,?,?,?,?,?,'pending_principal','approved','approved','pending')
-      `).run(user.userId, reason, destination, from_date, to_date, from_time||'', to_time||'');
-
-      // Notify the Principal
-      const principal = db.prepare(`SELECT id FROM users WHERE role='principal' LIMIT 1`).get();
-      if (principal) {
-        safeNotify(db, principal.id, 'New HOD Outpass Request',
-          `HOD ${user.name} has submitted an outpass request — ${reason}`, 'action', result.lastInsertRowid);
-      }
+    // Notify the class teacher of this department
+    const teacher = db.prepare(`SELECT id FROM users WHERE department=? AND role='class_teacher' LIMIT 1`).get(user.department);
+    if (teacher) {
+      safeNotify(db, teacher.id, 'New Outpass Request',
+        `${user.name} has submitted an outpass request — ${reason}`, 'action', result.lastInsertRowid);
     }
 
     // Notify the submitter

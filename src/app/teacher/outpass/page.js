@@ -18,6 +18,7 @@ export default function TeacherOutpassPage() {
   const [remarks, setRemarks] = useState('');
   const [actioning, setActioning] = useState(false);
   const [toast, setToast] = useState('');
+  const [successId, setSuccessId] = useState(null);
   const [notifs, setNotifs] = useState([]);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
@@ -46,19 +47,31 @@ export default function TeacherOutpassPage() {
   const handleAction = async (id, action) => {
     setActioning(true);
     const token = localStorage.getItem('token');
-    const res = await fetch(`/api/outpass/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action, remarks }),
-    });
-    if (res.ok) {
-      showToast(action === 'approve' ? '✅ Outpass approved! Sent to HOD.' : '❌ Outpass rejected.');
-      setSelected(null); setRemarks('');
-      load('pending');
-    } else {
-      const d = await res.json(); showToast('❌ ' + d.error);
+    try {
+      const res = await fetch(`/api/outpass/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action, remarks }),
+      });
+      if (res.ok) {
+        if (action === 'approve') {
+          setSuccessId(id);
+          showToast('✅ Request has been passed to the HOD.');
+        } else {
+          showToast('❌ Outpass rejected.');
+        }
+        setRemarks('');
+        load('pending');
+      } else {
+        let errorMsg = `Server error (${res.status})`;
+        try { const d = await res.json(); errorMsg = d.error || errorMsg; } catch {}
+        showToast('❌ ' + errorMsg);
+      }
+    } catch (err) {
+      showToast('❌ Network error. Please try again.');
+    } finally {
+      setActioning(false);
     }
-    setActioning(false);
   };
 
   return (
@@ -154,6 +167,7 @@ export default function TeacherOutpassPage() {
           animation:slideIn .3s ease;
         }
         @keyframes slideIn{from{transform:translateX(30px);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes spin{to{transform:rotate(360deg)}}
 
         .no-select{text-align:center;padding:3rem 1rem;color:rgba(255,255,255,.25);font-size:13px}
 
@@ -232,20 +246,27 @@ export default function TeacherOutpassPage() {
                     <div key={k} className="det-row"><span className="det-key">{k}</span><span className="det-val">{v}</span></div>
                   ))}
 
-                  {selected.teacher_status === 'pending' && (
+                  {selected.teacher_status === 'pending' && successId !== selected.id && (
                     <>
-                      <label className="remarks-lbl">Remarks (optional)</label>
-                      <textarea className="remarks-inp" placeholder="Add a note or reason for your decision..."
+                      <label className="remarks-lbl">Your Remarks (optional)</label>
+                      <textarea className="remarks-inp" placeholder="Add remarks for your decision..."
                         value={remarks} onChange={e=>setRemarks(e.target.value)} rows={3}/>
                       <div className="action-btns">
                         <button className="btn-approve" disabled={actioning} onClick={()=>handleAction(selected.id,'approve')}>
-                          {actioning?'…':'✅ Approve'}
+                          {actioning ? <span style={{display:'flex',alignItems:'center',gap:6,justifyContent:'center'}}><span style={{width:16,height:16,border:'2px solid rgba(74,222,128,.3)',borderTopColor:'#4ade80',borderRadius:'50%',animation:'spin .7s linear infinite',display:'inline-block'}}/> Processing</span> : '✅ Approve'}
                         </button>
                         <button className="btn-reject" disabled={actioning} onClick={()=>handleAction(selected.id,'reject')}>
-                          {actioning?'…':'❌ Reject'}
+                          {actioning ? '…' : '❌ Reject'}
                         </button>
                       </div>
                     </>
+                  )}
+                  {selected.teacher_status === 'pending' && successId === selected.id && (
+                    <div style={{marginTop:'1rem',padding:'16px',background:'linear-gradient(135deg,rgba(74,222,128,.12),rgba(74,222,128,.06))',border:'1px solid rgba(74,222,128,.3)',borderRadius:12,fontSize:13.5,color:'#86efac',textAlign:'center',lineHeight:1.6}}>
+                      <div style={{fontSize:22,marginBottom:6}}>✅</div>
+                      <div style={{fontWeight:800,fontSize:14,color:'#4ade80',marginBottom:4}}>Request Approved!</div>
+                      <div style={{color:'rgba(255,255,255,.7)'}}>The request has been passed to the HOD for further review.</div>
+                    </div>
                   )}
                   {selected.teacher_status === 'approved' && (
                     <div style={{marginTop:'1rem',padding:'12px',background:'rgba(74,222,128,.08)',border:'1px solid rgba(74,222,128,.2)',borderRadius:10,fontSize:13,color:'#86efac'}}>
