@@ -28,7 +28,19 @@ export default function OutpassPage() {
   const load = async () => {
     const token = localStorage.getItem('token');
     const res = await fetch('/api/outpass', { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) { const d = await res.json(); setOutpasses(d.outpasses||[]); }
+    if (res.ok) {
+      const d = await res.json();
+      const list = d.outpasses || [];
+      setOutpasses(list);
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get('id');
+      if (targetId) {
+        const found = list.find(o => String(o.id) === String(targetId));
+        if (found && found.status === 'approved') {
+          generateQR(found);
+        }
+      }
+    }
     setLoading(false);
   };
 

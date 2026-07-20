@@ -19,7 +19,7 @@ export default function TeacherDashboard() {
     if (!['class_teacher','hod','principal'].includes(parsed.role)) { router.push('/dashboard'); return; }
     setUser(parsed);
     fetchData(token);
-  }, []);
+  }, [router]);
 
   const fetchData = async (token) => {
     const h = { Authorization: `Bearer ${token}` };
@@ -34,7 +34,16 @@ export default function TeacherDashboard() {
   };
 
   const pending = data?.outpasses?.filter(o => o.teacher_status === 'pending') || [];
+  const allOutpasses = data?.outpasses || [];
   const unread = notifs.filter(n => !n.is_read).length;
+
+  const statusMap = {
+    pending_teacher:   { label:'Awaiting Teacher',   color:'#fbbf24', bg:'rgba(251,191,36,.12)' },
+    pending_hod:       { label:'Awaiting HOD',       color:'#60a5fa', bg:'rgba(96,165,250,.12)' },
+    pending_principal: { label:'Awaiting Principal', color:'#a78bfa', bg:'rgba(167,139,250,.12)' },
+    approved:          { label:'Approved',           color:'#4ade80', bg:'rgba(74,222,128,.12)' },
+    rejected:          { label:'Rejected',           color:'#f87171', bg:'rgba(248,113,113,.12)' },
+  };
 
   return (
     <>
@@ -77,20 +86,8 @@ export default function TeacherDashboard() {
         .op-name{font-size:13px;font-weight:700;color:rgba(255,255,255,.85)}
         .op-meta{font-size:11.5px;color:rgba(255,255,255,.38);margin-top:2px}
         .op-actions{display:flex;gap:7px;flex-shrink:0}
-        .btn-approve{padding:6px 13px;border-radius:8px;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
-        .btn-approve:hover{background:rgba(74,222,128,.25)}
-        .btn-reject{padding:6px 13px;border-radius:8px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);color:#f87171;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
-        .btn-reject:hover{background:rgba(248,113,113,.22)}
         .view-btn{padding:6px 11px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center}
-
-        .std-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-        .std-row:last-child{border-bottom:none}
-        .std-av{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,rgba(96,165,250,.2),rgba(96,165,250,.07));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#60a5fa;flex-shrink:0}
-        .std-info{flex:1}
-        .std-name{font-size:13px;font-weight:700;color:rgba(255,255,255,.82)}
-        .std-roll{font-size:11px;color:rgba(255,255,255,.35);margin-top:1px}
-        .att-bar{width:70px;height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-top:3px}
-        .att-fill{height:100%;border-radius:4px}
+        .view-btn:hover{background:rgba(255,200,60,.15);color:#ffc83c;border-color:rgba(255,200,60,.3)}
 
         .empty{text-align:center;padding:2.5rem;color:rgba(255,255,255,.3);font-size:13px}
         .skel{background:rgba(255,255,255,.06);border-radius:8px;animation:sh 1.5s infinite}
@@ -150,7 +147,7 @@ export default function TeacherDashboard() {
                        <div className="op-meta">📍 {op.destination} · 📅 {op.from_date} · {op.reason?.slice(0,50)}{op.reason?.length>50?'…':''}</div>
                      </div>
                      <div className="op-actions">
-                       <Link href="/teacher/outpass" className="view-btn">View</Link>
+                       <Link href={`/teacher/outpass?id=${op.id}`} className="view-btn">Review →</Link>
                      </div>
                    </div>
                  );
@@ -158,29 +155,31 @@ export default function TeacherDashboard() {
             </div>
           </div>
 
-          {/* Students overview */}
+          {/* Student Outpass Monitor */}
           <div className="section">
             <div className="sec-head">
-              <span className="sec-title">🎓 {user?.department} Students</span>
-              <Link href="/teacher/students" className="sec-link">View All →</Link>
+              <span className="sec-title">🚪 Department Outpass Monitor</span>
+              <Link href="/teacher/students" className="sec-link">Students Monitor →</Link>
             </div>
             <div className="sec-body">
               {loading ? [1,2,3,4].map(i=><div key={i} className="skel" style={{height:46,marginBottom:8}}/>) :
-               (data?.students||[]).slice(0,6).map(s => {
-                 const pct = s.attendance_pct || 0;
-                 const color = pct >= 75 ? '#4ade80' : pct >= 60 ? '#fbbf24' : '#f87171';
-                 const initials = s.name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || 'ST';
+               allOutpasses.length === 0 ? <div className="empty">🚪 No outpass history</div> :
+               allOutpasses.slice(0,6).map(op => {
+                 const st = statusMap[op.status] || { label: op.status, color: '#fff', bg: 'rgba(255,255,255,.1)' };
+                 const initials = op.student_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || 'ST';
                  return (
-                   <div key={s.user_id} className="std-row">
-                     <div className="std-av">{initials}</div>
-                     <div className="std-info">
-                       <div className="std-name">{s.name}</div>
-                       <div className="std-roll">Roll: {s.roll_no} · Yr {s.year} · Sec {s.section}</div>
+                   <div key={op.id} className="op-row">
+                     <div className="op-av" style={{background:`${st.color}18`,color:st.color}}>{initials}</div>
+                     <div className="op-info">
+                       <div className="op-name">{op.student_name} <span style={{color:'rgba(255,255,255,.35)',fontWeight:400}}>· {op.roll_no}</span></div>
+                       <div className="op-meta">📍 {op.destination} · 📅 {op.from_date} · {op.reason?.slice(0,40)}{op.reason?.length>40?'…':''}</div>
                      </div>
                      <div style={{textAlign:'right'}}>
-                       <div style={{fontSize:13,fontWeight:800,color}}>{pct}%</div>
-                       <div className="att-bar"><div className="att-fill" style={{width:`${pct}%`,background:color}}/></div>
+                       <span style={{fontSize:11,fontWeight:700,padding:'4px 9px',borderRadius:7,color:st.color,background:st.bg}}>
+                         {st.label}
+                       </span>
                      </div>
+                     <Link href={`/teacher/outpass?id=${op.id}`} className="view-btn" style={{marginLeft:8}}>View →</Link>
                    </div>
                  );
                })}

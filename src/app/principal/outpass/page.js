@@ -19,12 +19,27 @@ export default function PrincipalOutpassPage() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
-  const load = useCallback(async (f) => {
+  const load = useCallback(async (f = filter) => {
     const token = localStorage.getItem('token');
     const res = await fetch(`/api/teacher?filter=${f}`, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) { const d = await res.json(); setOutpasses(d.outpasses || []); }
+    if (res.ok) {
+      const d = await res.json();
+      const list = d.outpasses || [];
+      setOutpasses(list);
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get('id');
+      if (targetId) {
+        const found = list.find(o => String(o.id) === String(targetId));
+        if (found) {
+          setSelected(found);
+          if (found.principal_status === 'approved' || found.status === 'approved') generateQR(found);
+        } else if (f !== 'all') {
+          setFilter('all');
+        }
+      }
+    }
     setLoading(false);
-  }, []);
+  }, [filter, generateQR]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');

@@ -9,8 +9,7 @@ export default function PrincipalDashboard() {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
   const [outpasses, setOutpasses] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [staff, setStaff] = useState([]);
+  const [allOutpasses, setAllOutpasses] = useState([]);
   const [notifs, setNotifs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,23 +24,28 @@ export default function PrincipalDashboard() {
     Promise.all([
       fetch('/api/hod?type=stats', { headers: h }),
       fetch('/api/teacher?filter=pending', { headers: h }),
-      fetch('/api/hod?type=students', { headers: h }),
+      fetch('/api/teacher?filter=all', { headers: h }),
       fetch('/api/notifications', { headers: h }),
-      fetch('/api/hod?type=staff_attendance', { headers: h }),
-    ]).then(async ([r1,r2,r3,r4,r5]) => {
+    ]).then(async ([r1,r2,r3,r4]) => {
       if (r1.ok) setStats(await r1.json());
       if (r2.ok) { const d = await r2.json(); setOutpasses(d.outpasses||[]); }
-      if (r3.ok) { const d = await r3.json(); setStudents(d.students||[]); }
+      if (r3.ok) { const d = await r3.json(); setAllOutpasses(d.outpasses||[]); }
       if (r4.ok) { const d = await r4.json(); setNotifs(d.notifications||[]); }
-      if (r5.ok) { const d = await r5.json(); setStaff(d.staff||[]); }
       setLoading(false);
     });
-  }, []);
+  }, [router]);
 
   const unread = notifs.filter(n=>!n.is_read).length;
-  // Principal sees outpasses where HOD approved and status is pending_principal
   const principalPending = outpasses.filter(o => o.status === 'pending_principal');
-  const lowAtt = students.filter(s => s.attendance_pct < 75);
+  const totalApproved = allOutpasses.filter(o => o.status === 'approved').length;
+
+  const statusMap = {
+    pending_teacher:   { label:'Awaiting Teacher',   color:'#fbbf24', bg:'rgba(251,191,36,.12)' },
+    pending_hod:       { label:'Awaiting HOD',       color:'#60a5fa', bg:'rgba(96,165,250,.12)' },
+    pending_principal: { label:'Awaiting Principal', color:'#a78bfa', bg:'rgba(167,139,250,.12)' },
+    approved:          { label:'Approved',           color:'#4ade80', bg:'rgba(74,222,128,.12)' },
+    rejected:          { label:'Rejected',           color:'#f87171', bg:'rgba(248,113,113,.12)' },
+  };
 
   return (
     <>
@@ -67,9 +71,8 @@ export default function PrincipalDashboard() {
         .sc-lbl{font-size:12.5px;color:rgba(255,255,255,.42)}
         .tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
 
-        .content{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+        .content{display:grid;grid-template-columns:1fr;gap:1.5rem}
         .panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden}
-        .panel.full{grid-column: 1 / -1}
         .ph{display:flex;justify-content:space-between;align-items:center;padding:1.1rem 1.4rem;border-bottom:1px solid rgba(255,255,255,.06)}
         .pt{font-size:14px;font-weight:700;color:rgba(255,255,255,.85)}
         .pl{font-size:12.5px;color:#a78bfa;text-decoration:none;font-weight:700}
@@ -85,17 +88,10 @@ export default function PrincipalDashboard() {
         .action-link{font-size:12px;color:#a78bfa;text-decoration:none;font-weight:700;padding:5px 11px;border:1px solid rgba(167,139,250,.3);border-radius:8px;background:rgba(167,139,250,.08);transition:all .2s}
         .action-link:hover{background:rgba(167,139,250,.15)}
 
-        .std-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-        .std-row:last-child{border-bottom:none}
-        .std-av{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,rgba(248,113,113,.2),rgba(248,113,113,.07));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#f87171;flex-shrink:0}
-        .std-name{font-size:13px;font-weight:700;color:rgba(255,255,255,.82)}
-        .std-roll{font-size:11px;color:rgba(255,255,255,.35);margin-top:1px}
-        .warn-pct{font-size:13px;font-weight:800;color:#f87171}
-
         .empty{text-align:center;padding:2rem;color:rgba(255,255,255,.3);font-size:13px}
         .skel{background:rgba(255,255,255,.06);border-radius:8px;animation:sh 1.5s infinite}
         @keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
-        @media(max-width:1100px){.stats{grid-template-columns:1fr 1fr}.content{grid-template-columns:1fr}}
+        @media(max-width:1100px){.stats{grid-template-columns:1fr 1fr}}
         @media(max-width:768px){.main{padding:1.2rem;padding-bottom:80px}}
       `}</style>
       <div className="root">
@@ -116,8 +112,8 @@ export default function PrincipalDashboard() {
             {[
               { ico:'🎓', label:'Total Students', val: loading?'…':stats?.totalStudents||0, bg:'rgba(96,165,250,.12)', tagColor:'#60a5fa', tagBg:'rgba(96,165,250,.12)', tagLabel:'All Depts', href: '/principal/students' },
               { ico:'⏳', label:'Pending Approvals', val: loading?'…':principalPending.length, bg:'rgba(167,139,250,.12)', tagColor:'#a78bfa', tagBg:'rgba(167,139,250,.12)', tagLabel:'Need Action', href: '/principal/outpass' },
-              { ico:'⚠️', label:'Low Attendance', val: loading?'…':lowAtt.length, bg:'rgba(248,113,113,.12)', tagColor:'#f87171', tagBg:'rgba(248,113,113,.12)', tagLabel:'< 75%', href: '/principal/students' },
-              { ico:'✅', label:'Approved Today', val: loading?'…':stats?.approvedToday||0, bg:'rgba(74,222,128,.12)', tagColor:'#4ade80', tagBg:'rgba(74,222,128,.12)', tagLabel:'Today', href: '/principal/outpass?filter=approved' },
+              { ico:'✅', label:'Total Approved Passes', val: loading?'…':totalApproved, bg:'rgba(74,222,128,.12)', tagColor:'#4ade80', tagBg:'rgba(74,222,128,.12)', tagLabel:'Approved', href: '/principal/outpass?filter=approved' },
+              { ico:'🎫', label:'Total Applications', val: loading?'…':allOutpasses.length, bg:'rgba(251,191,36,.12)', tagColor:'#fbbf24', tagBg:'rgba(251,191,36,.12)', tagLabel:'All Records', href: '/principal/students' },
             ].map((s,i)=>(
               <Link href={s.href} key={i} className="sc" style={{textDecoration:'none',color:'inherit',display:'block'}}>
                 <div className="sc-top">
@@ -131,10 +127,10 @@ export default function PrincipalDashboard() {
           </div>
 
           <div className="content">
-            {/* Awaiting Approvals - Full Width */}
-            <div className="panel full">
+            {/* Awaiting Approvals */}
+            <div className="panel">
               <div className="ph">
-                <span className="pt">⏳ Awaiting Principal Approval (Students &amp; Staff) {principalPending.length>0 && <span style={{background:'#f87171',color:'#fff',fontSize:11,padding:'2px 7px',borderRadius:10,marginLeft:8}}>{principalPending.length}</span>}</span>
+                <span className="pt">⏳ Awaiting Principal Approval {principalPending.length>0 && <span style={{background:'#f87171',color:'#fff',fontSize:11,padding:'2px 7px',borderRadius:10,marginLeft:8}}>{principalPending.length}</span>}</span>
                 <Link href="/principal/outpass" className="pl">Review All →</Link>
               </div>
               <div className="pb">
@@ -142,70 +138,45 @@ export default function PrincipalDashboard() {
                 : principalPending.length === 0 ? <div className="empty">✅ No pending approvals</div>
                 : principalPending.slice(0,5).map(op=>{
                     const initials = op.student_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
-                    const isStudent = !!op.student_id;
                     return (
                       <div key={op.id} className="op-row">
                         <div className="av">{initials}</div>
                         <div className="op-info">
                           <div className="op-name">
-                            {op.student_name} · 
-                            <span style={{color: isStudent ? 'rgba(255,255,255,.4)' : '#fbbf24', fontWeight: isStudent ? 400 : 700, marginLeft: 6}}>
-                              {isStudent ? op.roll_no : op.applicant_role === 'class_teacher' ? 'Teacher' : 'HOD'}
-                            </span>
+                            {op.student_name} · <span style={{color:'rgba(255,255,255,.4)',fontWeight:400}}>{op.roll_no}</span>
                           </div>
                           <div className="op-meta">📍 {op.destination} · Dept: {op.department} · Reason: "{op.reason?.slice(0,45)}{op.reason?.length>45?'…':''}"</div>
                         </div>
-                        <Link href="/principal/outpass" className="action-link">Review</Link>
+                        <Link href={`/principal/outpass?id=${op.id}`} className="action-link">Review</Link>
                       </div>
                     );
                   })}
               </div>
             </div>
 
-            {/* Teacher & HOD Attendance Panel */}
+            {/* Institution-wide Outpasses Monitor */}
             <div className="panel">
               <div className="ph">
-                <span className="pt">👨‍🏫 Teacher &amp; HOD Leaves Tracker</span>
+                <span className="pt">🚪 Institution-wide Outpass Monitor</span>
+                <Link href="/principal/students" className="pl">Students Monitor →</Link>
               </div>
               <div className="pb">
                 {loading ? [1,2,3].map(i=><div key={i} className="skel" style={{height:46,marginBottom:8}}/>)
-                : staff.length === 0 ? <div className="empty">✅ No staff registered</div>
-                : staff.slice(0,6).map(s=>{
-                    const initials = s.name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
-                    const c = s.leave_days === 0 ? '#4ade80' : s.leave_days <= 1 ? '#fbbf24' : '#f87171';
+                : allOutpasses.length === 0 ? <div className="empty">🚪 No outpasses recorded</div>
+                : allOutpasses.slice(0,6).map(op=>{
+                    const st = statusMap[op.status] || { label: op.status, color: '#fff', bg: 'rgba(255,255,255,.1)' };
+                    const initials = op.student_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
                     return (
-                      <div key={s.id} className="std-row">
-                        <div className="std-av" style={{background:`rgba(167,139,250,.2)`,color:'#a78bfa'}}>{initials}</div>
+                      <div key={op.id} className="op-row">
+                        <div className="av" style={{background:`${st.color}18`,color:st.color}}>{initials}</div>
                         <div style={{flex:1}}>
-                          <div className="std-name">{s.name} · <span style={{color:'rgba(255,255,255,.4)',fontSize:11}}>{s.department}</span></div>
-                          <div className="std-roll">{s.role === 'class_teacher' ? 'Teacher' : 'HOD'}</div>
+                          <div className="op-name">{op.student_name} · <span style={{color:'rgba(255,255,255,.4)',fontSize:11}}>{op.department}</span></div>
+                          <div className="op-meta">📍 {op.destination} · {op.reason?.slice(0,40)}{op.reason?.length>40?'…':''}</div>
                         </div>
-                        <div style={{color:c,fontWeight:800}}>{s.leave_days} {s.leave_days === 1 ? 'Leave' : 'Leaves'}</div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-
-            {/* Low Attendance Students Panel */}
-            <div className="panel">
-              <div className="ph">
-                <span className="pt">⚠️ Low Attendance Students (All Depts)</span>
-                <Link href="/principal/students" className="pl">View All →</Link>
-              </div>
-              <div className="pb">
-                {loading ? [1,2,3].map(i=><div key={i} className="skel" style={{height:46,marginBottom:8}}/>)
-                : lowAtt.length === 0 ? <div className="empty">✅ All students above 75%</div>
-                : lowAtt.slice(0,6).map(s=>{
-                    const initials = s.name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
-                    return (
-                      <div key={s.user_id} className="std-row">
-                        <div className="std-av">{initials}</div>
-                        <div style={{flex:1}}>
-                          <div className="std-name">{s.name} · <span style={{color:'rgba(255,255,255,.4)',fontSize:11}}>{s.department}</span></div>
-                          <div className="std-roll">{s.roll_no} · Yr {s.year}</div>
-                        </div>
-                        <div className="warn-pct">{s.attendance_pct}%</div>
+                        <span style={{fontSize:11,fontWeight:700,padding:'3px 8px',borderRadius:6,color:st.color,background:st.bg}}>
+                          {st.label}
+                        </span>
+                        <Link href={`/principal/outpass?id=${op.id}`} className="action-link" style={{marginLeft:6}}>View</Link>
                       </div>
                     );
                   })}
@@ -223,7 +194,7 @@ export default function PrincipalDashboard() {
               {loading ? [1,2,3].map(i=><div key={i} className="skel" style={{height:52,marginBottom:8}}/>)
               : notifs.length === 0 ? <div className="empty">🔔 No notifications yet</div>
               : notifs.slice(0,6).map(n=>{
-                  const typeMap = {action:'🔔',info:'ℹ️',success:'✅',warning:'⚠️',attendance:'📊',outpass:'🚪',announcement:'📢'};
+                  const typeMap = {action:'🔔',info:'ℹ️',success:'✅',warning:'⚠️',outpass:'🚪',announcement:'📢'};
                   const typeIco = typeMap[n.type]||'🔔';
                   const typeColorMap = {action:'#f87171',info:'#60a5fa',success:'#4ade80',warning:'#fbbf24'};
                   const typeColor = typeColorMap[n.type]||'#94a3b8';
@@ -237,8 +208,8 @@ export default function PrincipalDashboard() {
                     return `${Math.floor(hrs/24)}d ago`;
                   })();
                   return (
-                    <div key={n.id} className="op-row" style={{opacity: n.is_read ? 0.55 : 1}}>
-                      <div className="std-av" style={{background:`${typeColor}18`,color:typeColor,fontSize:16,width:38,height:38,borderRadius:11}}>{typeIco}</div>
+                    <Link key={n.id} href={n.outpass_id ? `/principal/outpass?id=${n.outpass_id}` : '/principal/outpass'} className="op-row" style={{opacity: n.is_read ? 0.55 : 1, textDecoration:'none', color:'inherit', display:'flex'}}>
+                      <div className="av" style={{background:`${typeColor}18`,color:typeColor,fontSize:16,width:38,height:38,borderRadius:11}}>{typeIco}</div>
                       <div className="op-info" style={{flex:1}}>
                         <div className="op-name" style={{color: n.is_read ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.9)'}}>
                           {n.title || 'Notification'}
@@ -247,7 +218,7 @@ export default function PrincipalDashboard() {
                         <div className="op-meta">{n.message?.slice(0,65)}{n.message?.length>65?'…':''}</div>
                       </div>
                       <div style={{fontSize:11,color:'rgba(255,255,255,.3)',whiteSpace:'nowrap',flexShrink:0}}>{timeAgo}</div>
-                    </div>
+                    </Link>
                   );
                 })}
             </div>

@@ -8,7 +8,7 @@ const TYPE_INFO = {
   info:         { ico:'ℹ️', color:'#60a5fa' },
   success:      { ico:'✅', color:'#4ade80' },
   warning:      { ico:'⚠️', color:'#fbbf24' },
-  attendance:   { ico:'📊', color:'#fbbf24' },
+  attendance:   { ico:'🚪', color:'#fbbf24' },
   outpass:      { ico:'🚪', color:'#60a5fa' },
   announcement: { ico:'📢', color:'#a78bfa' },
   exam:         { ico:'📝', color:'#f87171' },
@@ -26,13 +26,36 @@ export default function NotificationsPage() {
     if (!token) { router.push('/login'); return; }
     fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } })
       .then(r=>r.json()).then(d=>setNotifs(d.notifications||[])).finally(()=>setLoading(false));
-  }, []);
+  }, [router]);
 
-  const markRead = async (id) => {
+  const handleNotifClick = async (n) => {
     const token = localStorage.getItem('token');
-    await fetch('/api/notifications', { method:'PATCH', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify({id}) });
-    setNotifs(prev=>prev.map(n=>n.id===id?{...n,is_read:1}:n));
+    const u = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // Mark as read if not already read
+    if (!n.is_read) {
+      fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: n.id }),
+      });
+      setNotifs(prev => prev.map(item => item.id === n.id ? { ...item, is_read: 1 } : item));
+    }
+
+    // Determine target route based on user role and outpass_id
+    const outpassId = n.outpass_id;
+    let targetPath = '/outpass';
+    if (u.role === 'class_teacher') targetPath = '/teacher/outpass';
+    else if (u.role === 'hod') targetPath = '/hod/outpass';
+    else if (u.role === 'principal') targetPath = '/principal/outpass';
+
+    if (outpassId) {
+      router.push(`${targetPath}?id=${outpassId}`);
+    } else {
+      router.push(targetPath);
+    }
   };
+
   const markAllRead = async () => {
     const token = localStorage.getItem('token');
     await fetch('/api/notifications', { method:'PATCH', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify({id:'all'}) });
@@ -62,7 +85,7 @@ export default function NotificationsPage() {
 
         .notif-list{display:flex;flex-direction:column;gap:8px;max-width:760px}
         .nc{display:flex;gap:14px;align-items:flex-start;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;cursor:pointer;transition:all .2s}
-        .nc:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.13)}
+        .nc:hover{background:rgba(255,255,255,.07);border-color:rgba(255,200,60,.3);transform:translateY(-1px)}
         .nc.unread{border-left:3px solid #60a5fa;background:rgba(96,165,250,.04)}
         .nc.unread:hover{background:rgba(96,165,250,.07)}
         .n-ico{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
@@ -72,6 +95,7 @@ export default function NotificationsPage() {
         .n-meta{display:flex;align-items:center;gap:10px}
         .n-time{font-size:11.5px;color:rgba(255,255,255,.3)}
         .n-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px}
+        .open-hint{font-size:12px;font-weight:700;color:#ffc83c;margin-left:auto;white-space:nowrap}
         .n-dot{width:8px;height:8px;border-radius:50%;background:#60a5fa;flex-shrink:0;margin-top:4px}
 
         .empty{text-align:center;padding:4rem 2rem;max-width:400px}
@@ -89,7 +113,7 @@ export default function NotificationsPage() {
           <div className="toprow">
             <div>
               <div className="page-title">🔔 Notifications</div>
-              <div className="page-sub">{unread>0?`${unread} unread notification${unread>1?'s':''}`:'You\'re all caught up!'}</div>
+              <div className="page-sub">{unread>0?`${unread} unread notification${unread>1?'s':''}`:'Tap any notification to view details instantly.'}</div>
             </div>
           </div>
 
@@ -110,13 +134,14 @@ export default function NotificationsPage() {
              ) : filtered.map(n=>{
                const ti = TYPE_INFO[n.type]||{ico:'🔔',color:'#94a3b8'};
                return (
-                 <div key={n.id} className={`nc ${!n.is_read?'unread':''}`} onClick={()=>!n.is_read&&markRead(n.id)}>
+                 <div key={n.id} className={`nc ${!n.is_read?'unread':''}`} onClick={() => handleNotifClick(n)}>
                    <div className="n-ico">{ti.ico}</div>
                    <div className="n-body">
                      <div className="n-msg">{n.message}</div>
                      <div className="n-meta">
                        <span className="n-time">{new Date(n.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
                        {n.type && <span className="n-tag" style={{color:ti.color,background:`${ti.color}18`}}>{n.type}</span>}
+                       <span className="open-hint">Open Request →</span>
                      </div>
                    </div>
                    {!n.is_read && <div className="n-dot"/>}

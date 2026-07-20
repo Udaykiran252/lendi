@@ -9,7 +9,7 @@ export default function HodDashboard() {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
   const [outpasses, setOutpasses] = useState([]);
-  const [students, setStudents] = useState([]);
+  const [allDeptOutpasses, setAllDeptOutpasses] = useState([]);
   const [notifs, setNotifs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,21 +24,27 @@ export default function HodDashboard() {
     Promise.all([
       fetch('/api/hod?type=stats', { headers: h }),
       fetch('/api/teacher?filter=pending', { headers: h }),
-      fetch('/api/hod?type=students', { headers: h }),
+      fetch('/api/teacher?filter=all', { headers: h }),
       fetch('/api/notifications', { headers: h }),
     ]).then(async ([r1,r2,r3,r4]) => {
       if (r1.ok) setStats(await r1.json());
       if (r2.ok) { const d = await r2.json(); setOutpasses(d.outpasses||[]); }
-      if (r3.ok) { const d = await r3.json(); setStudents(d.students||[]); }
+      if (r3.ok) { const d = await r3.json(); setAllDeptOutpasses(d.outpasses||[]); }
       if (r4.ok) { const d = await r4.json(); setNotifs(d.notifications||[]); }
       setLoading(false);
     });
-  }, []);
+  }, [router]);
 
   const unread = notifs.filter(n=>!n.is_read).length;
-  // HOD sees outpasses where teacher approved but HOD pending
   const hodPending = outpasses.filter(o => o.teacher_status === 'approved' && o.hod_status === 'pending');
-  const lowAtt = students.filter(s => s.attendance_pct < 75);
+
+  const statusMap = {
+    pending_teacher:   { label:'Awaiting Teacher',   color:'#fbbf24', bg:'rgba(251,191,36,.12)' },
+    pending_hod:       { label:'Awaiting HOD',       color:'#60a5fa', bg:'rgba(96,165,250,.12)' },
+    pending_principal: { label:'Awaiting Principal', color:'#a78bfa', bg:'rgba(167,139,250,.12)' },
+    approved:          { label:'Approved',           color:'#4ade80', bg:'rgba(74,222,128,.12)' },
+    rejected:          { label:'Rejected',           color:'#f87171', bg:'rgba(248,113,113,.12)' },
+  };
 
   return (
     <>
@@ -81,13 +87,6 @@ export default function HodDashboard() {
         .action-link{font-size:12px;color:#fbbf24;text-decoration:none;font-weight:700;padding:5px 11px;border:1px solid rgba(251,191,36,.3);border-radius:8px;background:rgba(251,191,36,.08);transition:all .2s}
         .action-link:hover{background:rgba(251,191,36,.15)}
 
-        .std-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-        .std-row:last-child{border-bottom:none}
-        .std-av{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,rgba(248,113,113,.2),rgba(248,113,113,.07));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#f87171;flex-shrink:0}
-        .std-name{font-size:13px;font-weight:700;color:rgba(255,255,255,.82)}
-        .std-roll{font-size:11px;color:rgba(255,255,255,.35);margin-top:1px}
-        .warn-pct{font-size:13px;font-weight:800;color:#f87171}
-
         .empty{text-align:center;padding:2rem;color:rgba(255,255,255,.3);font-size:13px}
         .skel{background:rgba(255,255,255,.06);border-radius:8px;animation:sh 1.5s infinite}
         @keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
@@ -110,9 +109,9 @@ export default function HodDashboard() {
 
           <div className="stats">
             {[
-              { ico:'🎓', label:'Total Students', val: loading?'…':stats?.totalStudents||0, bg:'rgba(96,165,250,.12)', tagCls:'', tagColor:'#60a5fa', tagBg:'rgba(96,165,250,.12)', tagLabel:user?.department, href: '/hod/students' },
+              { ico:'🎓', label:'Total Students', val: loading?'…':stats?.totalStudents||0, bg:'rgba(96,165,250,.12)', tagColor:'#60a5fa', tagBg:'rgba(96,165,250,.12)', tagLabel:user?.department, href: '/hod/students' },
               { ico:'⏳', label:'Pending Approvals', val: loading?'…':hodPending.length, bg:'rgba(251,191,36,.12)', tagColor:'#fbbf24', tagBg:'rgba(251,191,36,.12)', tagLabel:'Need Action', href: '/hod/outpass' },
-              { ico:'⚠️', label:'Low Attendance', val: loading?'…':lowAtt.length, bg:'rgba(248,113,113,.12)', tagColor:'#f87171', tagBg:'rgba(248,113,113,.12)', tagLabel:'< 75%', href: '/hod/students' },
+              { ico:'🎫', label:'Total Outpasses', val: loading?'…':allDeptOutpasses.length, bg:'rgba(167,139,250,.12)', tagColor:'#a78bfa', tagBg:'rgba(167,139,250,.12)', tagLabel:'Total Applied', href: '/hod/students' },
               { ico:'✅', label:'Approved Today', val: loading?'…':stats?.approvedToday||0, bg:'rgba(74,222,128,.12)', tagColor:'#4ade80', tagBg:'rgba(74,222,128,.12)', tagLabel:'Today', href: '/hod/outpass?filter=approved' },
             ].map((s,i)=>(
               <Link href={s.href} key={i} className="sc" style={{textDecoration:'none',color:'inherit',display:'block'}}>
@@ -144,7 +143,7 @@ export default function HodDashboard() {
                           <div className="op-name">{op.student_name} · <span style={{color:'rgba(255,255,255,.4)',fontWeight:400}}>{op.roll_no}</span></div>
                           <div className="op-meta">📍 {op.destination} · {op.from_date} · {op.reason?.slice(0,45)}{op.reason?.length>45?'…':''}</div>
                         </div>
-                        <Link href="/hod/outpass" className="action-link">Review</Link>
+                        <Link href={`/hod/outpass?id=${op.id}`} className="action-link">Review</Link>
                       </div>
                     );
                   })}
@@ -153,22 +152,26 @@ export default function HodDashboard() {
 
             <div className="panel">
               <div className="ph">
-                <span className="pt">⚠️ Low Attendance Students</span>
-                <Link href="/hod/students" className="pl">View All →</Link>
+                <span className="pt">🚪 Department Outpass Monitor</span>
+                <Link href="/hod/students" className="pl">Students Monitor →</Link>
               </div>
               <div className="pb">
                 {loading ? [1,2,3].map(i=><div key={i} className="skel" style={{height:46,marginBottom:8}}/>)
-                : lowAtt.length === 0 ? <div className="empty">✅ All students above 75%</div>
-                : lowAtt.slice(0,6).map(s=>{
-                    const initials = s.name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
+                : allDeptOutpasses.length === 0 ? <div className="empty">🚪 No outpasses recorded</div>
+                : allDeptOutpasses.slice(0,6).map(op=>{
+                    const st = statusMap[op.status] || { label: op.status, color: '#fff', bg: 'rgba(255,255,255,.1)' };
+                    const initials = op.student_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
                     return (
-                      <div key={s.user_id} className="std-row">
-                        <div className="std-av">{initials}</div>
+                      <div key={op.id} className="op-row">
+                        <div className="av" style={{background:`${st.color}18`,color:st.color}}>{initials}</div>
                         <div style={{flex:1}}>
-                          <div className="std-name">{s.name}</div>
-                          <div className="std-roll">{s.roll_no} · Yr {s.year}</div>
+                          <div className="op-name">{op.student_name} <span style={{color:'rgba(255,255,255,.35)',fontWeight:400}}>· {op.roll_no}</span></div>
+                          <div className="op-meta">📍 {op.destination} · {op.reason?.slice(0,35)}{op.reason?.length>35?'…':''}</div>
                         </div>
-                        <div className="warn-pct">{s.attendance_pct}%</div>
+                        <span style={{fontSize:11,fontWeight:700,padding:'3px 8px',borderRadius:6,color:st.color,background:st.bg}}>
+                          {st.label}
+                        </span>
+                        <Link href={`/hod/outpass?id=${op.id}`} className="action-link" style={{marginLeft:6}}>View</Link>
                       </div>
                     );
                   })}
@@ -186,7 +189,7 @@ export default function HodDashboard() {
               {loading ? [1,2,3].map(i=><div key={i} className="skel" style={{height:52,marginBottom:8}}/>)
               : notifs.length === 0 ? <div className="empty">🔔 No notifications yet</div>
               : notifs.slice(0,6).map(n=>{
-                  const typeMap = {action:'🔔',info:'ℹ️',success:'✅',warning:'⚠️',attendance:'📊',outpass:'🚪',announcement:'📢'};
+                  const typeMap = {action:'🔔',info:'ℹ️',success:'✅',warning:'⚠️',outpass:'🚪',announcement:'📢'};
                   const typeIco = typeMap[n.type]||'🔔';
                   const typeColorMap = {action:'#f87171',info:'#60a5fa',success:'#4ade80',warning:'#fbbf24'};
                   const typeColor = typeColorMap[n.type]||'#94a3b8';
@@ -200,8 +203,8 @@ export default function HodDashboard() {
                     return `${Math.floor(hrs/24)}d ago`;
                   })();
                   return (
-                    <div key={n.id} className="op-row" style={{opacity: n.is_read ? 0.55 : 1}}>
-                      <div className="std-av" style={{background:`${typeColor}18`,color:typeColor,fontSize:16,width:38,height:38,borderRadius:11}}>{typeIco}</div>
+                    <Link key={n.id} href={n.outpass_id ? `/hod/outpass?id=${n.outpass_id}` : '/hod/outpass'} className="op-row" style={{opacity: n.is_read ? 0.55 : 1, textDecoration:'none', color:'inherit', display:'flex'}}>
+                      <div className="av" style={{background:`${typeColor}18`,color:typeColor,fontSize:16,width:38,height:38,borderRadius:11}}>{typeIco}</div>
                       <div className="op-info" style={{flex:1}}>
                         <div className="op-name" style={{color: n.is_read ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.9)'}}>
                           {n.title || 'Notification'}
@@ -210,7 +213,7 @@ export default function HodDashboard() {
                         <div className="op-meta">{n.message?.slice(0,65)}{n.message?.length>65?'…':''}</div>
                       </div>
                       <div style={{fontSize:11,color:'rgba(255,255,255,.3)',whiteSpace:'nowrap',flexShrink:0}}>{timeAgo}</div>
-                    </div>
+                    </Link>
                   );
                 })}
             </div>

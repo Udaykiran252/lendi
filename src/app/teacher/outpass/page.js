@@ -26,7 +26,22 @@ export default function TeacherOutpassPage() {
   const load = useCallback(async (f = filter) => {
     const token = localStorage.getItem('token');
     const res = await fetch(`/api/teacher?filter=${f}`, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) { const d = await res.json(); setOutpasses(d.outpasses || []); }
+    if (res.ok) {
+      const d = await res.json();
+      const list = d.outpasses || [];
+      setOutpasses(list);
+      // Auto select outpass from URL query if present
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get('id');
+      if (targetId) {
+        const found = list.find(o => String(o.id) === String(targetId));
+        if (found) {
+          setSelected(found);
+        } else if (f !== 'all') {
+          setFilter('all');
+        }
+      }
+    }
     setLoading(false);
   }, [filter]);
 

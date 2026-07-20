@@ -8,7 +8,7 @@ export default function PrincipalStudentsPage() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterAtt, setFilterAtt] = useState('all');
+  const [filterType, setFilterType] = useState('all');
   const [notifs, setNotifs] = useState([]);
   const [pendingOutpasses, setPendingOutpasses] = useState(0);
 
@@ -26,7 +26,7 @@ export default function PrincipalStudentsPage() {
         const ops = d.outpasses||[];
         setPendingOutpasses(ops.filter(o=>o.status==='pending_principal').length);
       });
-  }, []);
+  }, [router]);
 
   const unread = notifs.filter(n=>!n.is_read).length;
 
@@ -34,16 +34,12 @@ export default function PrincipalStudentsPage() {
     const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
                         s.roll_no.toLowerCase().includes(search.toLowerCase()) ||
                         s.department.toLowerCase().includes(search.toLowerCase());
-    const matchAtt = filterAtt==='all' ||
-                     (filterAtt==='safe' && s.attendance_pct>=75) ||
-                     (filterAtt==='risk' && s.attendance_pct>=60&&s.attendance_pct<75) ||
-                     (filterAtt==='danger' && s.attendance_pct<60);
-    return matchSearch && matchAtt;
+    const matchFilter = filterType==='all' ||
+                        (filterType==='active' && (s.approved_outpasses||0) > 0) ||
+                        (filterType==='frequent' && (s.approved_outpasses||0) >= 2) ||
+                        (filterType==='none' && (!s.approved_outpasses || s.approved_outpasses === 0));
+    return matchSearch && matchFilter;
   });
-
-  const getColor = p => p>=75?'#4ade80':p>=60?'#fbbf24':'#f87171';
-  const getStatus = p => p>=75?'Safe':p>=60?'At Risk':'Danger';
-  const getStatusBg = p => p>=75?'rgba(74,222,128,.12)':p>=60?'rgba(251,191,36,.12)':'rgba(248,113,113,.12)';
 
   return (
     <>
@@ -81,10 +77,6 @@ export default function PrincipalStudentsPage() {
         .nc{display:flex;align-items:center;gap:10px}
         .nm{font-weight:700;color:rgba(255,255,255,.88)}
         .em{font-size:11.5px;color:rgba(255,255,255,.35);margin-top:1px}
-        .ac{display:flex;align-items:center;gap:8px}
-        .ab{width:60px;height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;flex-shrink:0}
-        .af{height:100%;border-radius:4px}
-        .ap{font-size:13px;font-weight:800;width:36px}
         .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
         .skel{background:rgba(255,255,255,.06);border-radius:8px;animation:sh 1.5s infinite;margin-bottom:8px}
         @keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
@@ -93,15 +85,15 @@ export default function PrincipalStudentsPage() {
       <div className="root">
         <Sidebar unreadCount={unread} pendingCount={pendingOutpasses} />
         <main className="main">
-          <div className="page-title">🎓 Students Monitor</div>
-          <div className="page-sub">Full overview of all students in the institution</div>
+          <div className="page-title">🎓 Institutional Students Outpass Monitor</div>
+          <div className="page-sub">Full overview of all students and outpass activity across all departments</div>
 
           <div className="summary-row">
             {[
               { n: students.length, l: 'Total Students', color: '#fff' },
-              { n: students.filter(s=>s.attendance_pct>=75).length, l: 'Safe (≥75%)', color: '#4ade80' },
-              { n: students.filter(s=>s.attendance_pct>=60&&s.attendance_pct<75).length, l: 'At Risk (60-75%)', color: '#fbbf24' },
-              { n: students.filter(s=>s.attendance_pct<60).length, l: 'Danger (<60%)', color: '#f87171' },
+              { n: students.filter(s=>(s.approved_outpasses||0)>0).length, l: 'With Approved Passes', color: '#4ade80' },
+              { n: students.filter(s=>(s.approved_outpasses||0)>=2).length, l: 'Frequent Applicants', color: '#fbbf24' },
+              { n: students.filter(s=>!s.approved_outpasses || s.approved_outpasses===0).length, l: 'No Outpasses', color: 'rgba(255,255,255,.5)' },
             ].map((s,i)=>(
               <div key={i} className="sum-card">
                 <div className="sum-n" style={{color:s.color}}>{loading?'…':s.n}</div>
@@ -116,9 +108,14 @@ export default function PrincipalStudentsPage() {
               <input className="sb-inp" placeholder="Search name, roll no, department..."
                 value={search} onChange={e=>setSearch(e.target.value)}/>
             </div>
-            {['all','safe','risk','danger'].map(f=>(
-              <button key={f} className={`fb ${filterAtt===f?'on':'off'}`} onClick={()=>setFilterAtt(f)}>
-                {f==='all'?'All Attendance':f==='safe'?'Safe (≥75%)':f==='risk'?'At Risk':'Danger (<60%)'}
+            {[
+              { id: 'all', label: 'All Students' },
+              { id: 'active', label: 'With Passes' },
+              { id: 'frequent', label: 'Frequent' },
+              { id: 'none', label: 'No Passes' },
+            ].map(f=>(
+              <button key={f.id} className={`fb ${filterType===f.id?'on':'off'}`} onClick={()=>setFilterType(f.id)}>
+                {f.label}
               </button>
             ))}
             <div className="count">Showing {filtered.length} students</div>
@@ -135,15 +132,19 @@ export default function PrincipalStudentsPage() {
                      <th>Roll Number</th>
                      <th>Department</th>
                      <th>Year &amp; Section</th>
-                     <th>Attendance</th>
-                     <th>Status</th>
+                     <th>Outpass Status</th>
                      <th>Approved Passes</th>
                    </tr>
                  </thead>
                  <tbody>
                    {filtered.map(s=>{
+                     const approved = s.approved_outpasses || 0;
                      const initials = s.name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
-                     const c = getColor(s.attendance_pct);
+                     const statusTag = approved >= 2
+                       ? { label: 'Frequent Applicant', color: '#fbbf24', bg: 'rgba(251,191,36,.12)' }
+                       : approved > 0
+                       ? { label: 'Active User', color: '#4ade80', bg: 'rgba(74,222,128,.12)' }
+                       : { label: 'Regular', color: 'rgba(255,255,255,.4)', bg: 'rgba(255,255,255,.06)' };
                      return (
                        <tr key={s.user_id}>
                          <td>
@@ -159,17 +160,11 @@ export default function PrincipalStudentsPage() {
                          <td style={{fontWeight:700}}>{s.department}</td>
                          <td>Yr {s.year} · Sec {s.section||'A'}</td>
                          <td>
-                           <div className="ac">
-                             <div className="ab"><div className="af" style={{width:`${s.attendance_pct}%`,background:c}}/></div>
-                             <span className="ap" style={{color:c}}>{s.attendance_pct}%</span>
-                           </div>
-                         </td>
-                         <td>
-                           <span className="badge" style={{color:c,background:getStatusBg(s.attendance_pct)}}>
-                             {getStatus(s.attendance_pct)}
+                           <span className="badge" style={{color:statusTag.color,background:statusTag.bg}}>
+                             {statusTag.label}
                            </span>
                          </td>
-                         <td style={{textAlign:'center',fontWeight:700}}>{s.approved_outpasses}</td>
+                         <td style={{fontWeight:700}}><span className="badge" style={{background:'rgba(74,222,128,.1)',color:'#4ade80'}}>{approved} approved</span></td>
                        </tr>
                      );
                    })}

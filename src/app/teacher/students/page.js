@@ -17,14 +17,12 @@ export default function TeacherStudentsPage() {
     if (!['class_teacher'].includes(parsed.role)) { router.push('/login'); return; }
     fetch('/api/hod?type=students', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(d => setStudents(d.students || [])).finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   const filtered = students.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.roll_no.toLowerCase().includes(search.toLowerCase())
   );
-
-  const getColor = p => p >= 75 ? '#4ade80' : p >= 60 ? '#fbbf24' : '#f87171';
 
   return (
     <>
@@ -53,10 +51,6 @@ export default function TeacherStudentsPage() {
         .name-cell{display:flex;align-items:center;gap:10px}
         .name-txt{font-weight:700;color:rgba(255,255,255,.88)}
         .email-txt{font-size:11.5px;color:rgba(255,255,255,.35);margin-top:1px}
-        .att-cell{display:flex;align-items:center;gap:8px}
-        .att-bar{width:60px;height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;flex-shrink:0}
-        .att-fill{height:100%;border-radius:4px}
-        .att-pct{font-size:13px;font-weight:800;width:36px}
         .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
 
         .tbl-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden}
@@ -67,8 +61,8 @@ export default function TeacherStudentsPage() {
       <div className="root">
         <Sidebar />
         <main className="main">
-          <div className="page-title">🎓 My Students</div>
-          <div className="page-sub">Monitor attendance and details of students in your department</div>
+          <div className="page-title">🎓 Students Outpass Monitor</div>
+          <div className="page-sub">Monitor student details and outpass activity in your department</div>
           <div className="toolbar">
             <div className="search-box">
               <span className="search-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.3"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg></span>
@@ -84,14 +78,18 @@ export default function TeacherStudentsPage() {
                   <thead>
                     <tr>
                       <th>Student</th><th>Roll No</th><th>Year / Sem</th><th>Section</th>
-                      <th>Attendance</th><th>Outpasses</th>
+                      <th>Outpass Status</th><th>Approved Passes</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.map(s => {
-                      const pct = s.attendance_pct || 0;
-                      const color = getColor(pct);
+                      const approved = s.approved_outpasses || 0;
                       const initials = s.name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
+                      const statusTag = approved > 2
+                        ? { label: 'Frequent Applicant', color: '#fbbf24', bg: 'rgba(251,191,36,.12)' }
+                        : approved > 0
+                        ? { label: 'Active User', color: '#4ade80', bg: 'rgba(74,222,128,.12)' }
+                        : { label: 'No Passes', color: 'rgba(255,255,255,.4)', bg: 'rgba(255,255,255,.06)' };
                       return (
                         <tr key={s.user_id}>
                           <td>
@@ -104,12 +102,11 @@ export default function TeacherStudentsPage() {
                           <td>Yr {s.year} · Sem {s.semester}</td>
                           <td><span className="badge" style={{background:'rgba(96,165,250,.12)',color:'#60a5fa'}}>{s.section}</span></td>
                           <td>
-                            <div className="att-cell">
-                              <div className="att-bar"><div className="att-fill" style={{width:`${pct}%`,background:color}}/></div>
-                              <span className="att-pct" style={{color}}>{pct}%</span>
-                            </div>
+                            <span className="badge" style={{color:statusTag.color,background:statusTag.bg}}>
+                              {statusTag.label}
+                            </span>
                           </td>
-                          <td><span className="badge" style={{background:'rgba(74,222,128,.1)',color:'#4ade80'}}>{s.approved_outpasses} approved</span></td>
+                          <td><span className="badge" style={{background:'rgba(74,222,128,.1)',color:'#4ade80'}}>{approved} approved</span></td>
                         </tr>
                       );
                     })}
