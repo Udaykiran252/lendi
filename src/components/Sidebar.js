@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 
 const NAV_STUDENT = [
   { href: '/dashboard', label: 'Dashboard', ico: '🏠' },
-  { href: '/attendance', label: 'Attendance', ico: '📊' },
   { href: '/outpass', label: 'Outpass', ico: '🚪' },
   { href: '/notifications', label: 'Notifications', ico: '🔔', badge: true },
 ];

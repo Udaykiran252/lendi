@@ -2,10 +2,25 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 
-export async function GET(request, segmentData) {
+function safeNotify(db, userId, title, message, type, outpassId) {
+  try {
+    db.prepare(`INSERT INTO notifications(user_id,title,message,type,outpass_id) VALUES(?,?,?,?,?)`)
+      .run(userId, title, message, type, outpassId);
+  } catch (e) {
+    try {
+      db.prepare(`INSERT INTO notifications(user_id,title,message,type) VALUES(?,?,?,?)`)
+        .run(userId, title, message, type);
+    } catch (e2) {
+      console.error('Notification insert failed:', e2.message);
+    }
+  }
+}
+
+export async function GET(request, context) {
   const user = verifyToken(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { id } = await segmentData.params;
+  const params = context?.params ? await context.params : context;
+  const id = params?.id;
   const db = getDb();
   const op = db.prepare(`
     SELECT o.*, u.name as student_name, u.email as student_email, u.role as applicant_role, u.department,
@@ -19,11 +34,12 @@ export async function GET(request, segmentData) {
   return NextResponse.json({ outpass: op });
 }
 
-export async function PATCH(request, segmentData) {
+export async function PATCH(request, context) {
   try {
     const user = verifyToken(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const { id: outpassId } = await segmentData.params;
+    const params = context?.params ? await context.params : context;
+    const outpassId = params?.id;
 
     let body;
     try { body = await request.json(); } catch {
@@ -48,7 +64,7 @@ export async function PATCH(request, segmentData) {
     if (user.role === 'class_teacher') {
       if (op.teacher_status !== 'pending')
         return NextResponse.json({ error: 'Already actioned by teacher' }, { status: 400 });
-      if (op.department !== user.department)
+      if (user.department && op.department && op.department.trim().toLowerCase() !== user.department.trim().toLowerCase())
         return NextResponse.json({ error: 'Not your department' }, { status: 403 });
 
       db.prepare(`UPDATE outpasses SET teacher_status=?, teacher_remarks=?, teacher_action_at=?,
@@ -59,7 +75,7 @@ export async function PATCH(request, segmentData) {
       );
 
       // Notify student
-      db.prepare(`INSERT INTO notifications(user_id,title,message,type,outpass_id) VALUES(?,?,?,?,?)`).run(
+      safeNotify(db,
         op.student_user_id,
         action === 'approve' ? 'Outpass Approved by Teacher' : 'Outpass Rejected by Teacher',
         action === 'approve'
@@ -71,10 +87,9 @@ export async function PATCH(request, segmentData) {
 
       // Notify HOD
       if (action === 'approve') {
-        const hod = db.prepare(`SELECT id FROM users WHERE department=? AND role='hod' LIMIT 1`).get(user.department);
+        const hod = db.prepare(`SELECT id FROM users WHERE LOWER(department)=LOWER(?) AND role='hod' LIMIT 1`).get(user.department);
         if (hod) {
-          db.prepare(`INSERT INTO notifications(user_id,title,message,type,outpass_id) VALUES(?,?,?,?,?)`).run(
-            hod.id, 'Outpass Awaiting Your Approval',
+          safeNotify(db, hod.id, 'Outpass Awaiting Your Approval',
             `${op.student_name}'s outpass has been approved by class teacher. Please review.`,
             'action', op.id
           );
@@ -93,7 +108,7 @@ export async function PATCH(request, segmentData) {
       );
 
       // Notify student
-      db.prepare(`INSERT INTO notifications(user_id,title,message,type,outpass_id) VALUES(?,?,?,?,?)`).run(
+      safeNotify(db,
         op.student_user_id,
         action === 'approve' ? 'Outpass Approved by HOD' : 'Outpass Rejected by HOD',
         action === 'approve'
@@ -107,8 +122,7 @@ export async function PATCH(request, segmentData) {
       if (action === 'approve') {
         const principal = db.prepare(`SELECT id FROM users WHERE role='principal' LIMIT 1`).get();
         if (principal) {
-          db.prepare(`INSERT INTO notifications(user_id,title,message,type,outpass_id) VALUES(?,?,?,?,?)`).run(
-            principal.id, 'Outpass Awaiting Your Approval',
+          safeNotify(db, principal.id, 'Outpass Awaiting Your Approval',
             `${op.student_name}'s outpass has been approved by HOD. Please review.`,
             'action', op.id
           );
@@ -127,7 +141,7 @@ export async function PATCH(request, segmentData) {
       );
 
       // Notify student
-      db.prepare(`INSERT INTO notifications(user_id,title,message,type,outpass_id) VALUES(?,?,?,?,?)`).run(
+      safeNotify(db,
         op.student_user_id,
         action === 'approve' ? '✅ Outpass Fully Approved!' : '❌ Outpass Rejected by Principal',
         action === 'approve'

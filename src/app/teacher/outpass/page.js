@@ -60,6 +60,7 @@ export default function TeacherOutpassPage() {
         } else {
           showToast('❌ Outpass rejected.');
         }
+        setSelected(prev => prev ? { ...prev, teacher_status: action === 'approve' ? 'approved' : 'rejected', teacher_remarks: remarks } : null);
         setRemarks('');
         load('pending');
       } else {
