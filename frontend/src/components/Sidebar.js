@@ -24,9 +24,9 @@ const NAV_PRINCIPAL = [
   { href: '/principal/dashboard', label: 'Dashboard', ico: '🏠' },
   { href: '/principal/outpass', label: 'Outpass Approvals', ico: '🚪', badge: true },
   { href: '/principal/students', label: 'Students Monitor', ico: '🎓' },
-  { href: '/principal/faculty', label: 'Faculty Monitor', ico: '👨‍🏫' },
   { href: '/notifications', label: 'Notifications', ico: '🔔', badge: true },
 ];
+
 const NAV_ADMIN = [
   { href: '/admin/dashboard', label: 'Dashboard', ico: '🏠' },
   { href: '/admin/users', label: 'Manage Users', ico: '👤' },
