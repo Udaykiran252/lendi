@@ -22,3 +22,29 @@ body{font-family:'Inter','Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;bac
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
 
+/* ── Global Blue Accent Borders ── */
+.card, .panel, .sc, .sum-card, .tbl-wrap, .form-card {
+  border: 1px solid #93c5fd !important;
+  border-top: 3px solid #2563eb !important;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06) !important;
+}
+
+.sc:hover, .panel:hover, .card:hover, .sum-card:hover {
+  border-color: #3b82f6 !important;
+  border-top-color: #1d4ed8 !important;
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.12) !important;
+}
+
+.sb {
+  border-right: 1.5px solid #bfdbfe !important;
+}
+
+.sb-head, .ph {
+  border-bottom: 1.5px solid #dbeafe !important;
+}
+
+.inp:focus, .sb-inp:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
