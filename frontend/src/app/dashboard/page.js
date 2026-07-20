@@ -131,11 +131,10 @@ export default function Dashboard() {
           </div>
 
           {/* Stats */}
-          <div className="stats">
+          <div className="stats" style={{gridTemplateColumns:'1fr 1fr'}}>
             {[
-              { href:'/outpass', ico:'🚪', label:'Total Outpasses', val: loading?'…':outpasses.length, bg:'rgba(74,222,128,.12)', tag: !loading&&{c:'#4ade80',bg:'rgba(74,222,128,.12)',l:`${approvedCount} Approved`} },
-              { href:'/outpass', ico:'⏳', label:'Pending Approvals', val: loading?'…':pendingCount, bg:'rgba(251,191,36,.12)', tag: !loading&&(pendingCount>0?{c:'#fbbf24',bg:'rgba(251,191,36,.12)',l:'In Progress'}:{c:'#4ade80',bg:'rgba(74,222,128,.12)',l:'None'}) },
-              { href:'/notifications', ico:'🔔', label:'Notifications', val: loading?'…':notifs.length, bg:'rgba(96,165,250,.12)', tag: !loading&&(unread>0?{c:'#f87171',bg:'rgba(248,113,113,.12)',l:`${unread} New`}:{c:'#4ade80',bg:'rgba(74,222,128,.12)',l:'All Read'}) },
+              { href:'/outpass', ico:'🚪', label:'Total Outpasses', val: loading?'…':outpasses.length, bg:'rgba(74,222,128,.12)', tag: !loading&&{c:'#16a34a',bg:'rgba(74,222,128,.12)',l:`${approvedCount} Approved`} },
+              { href:'/outpass', ico:'⏳', label:'Pending Approvals', val: loading?'…':pendingCount, bg:'rgba(251,191,36,.12)', tag: !loading&&(pendingCount>0?{c:'#d97706',bg:'rgba(251,191,36,.12)',l:'In Progress'}:{c:'#16a34a',bg:'rgba(74,222,128,.12)',l:'None'}) },
             ].map((s,i)=>(
               <Link key={i} href={s.href} className="sc">
                 <div className="sc-top">
@@ -148,7 +147,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          <div className="grid2">
+          <div style={{marginTop:'1.5rem'}}>
             {/* Outpass */}
             <div className="panel">
               <div className="ph"><span className="pt">🚪 My Outpasses</span><Link href="/outpass" className="pl">Apply / View →</Link></div>
@@ -169,23 +168,6 @@ export default function Dashboard() {
                      <br/><Link href="/outpass" className="apply-btn">+ Apply for Outpass</Link>
                    </div>
                  )}
-              </div>
-            </div>
-
-            {/* Notifications */}
-            <div className="panel">
-              <div className="ph">
-                <span className="pt">🔔 Notifications {unread>0&&<span style={{background:'#f87171',color:'#fff',fontSize:11,padding:'2px 7px',borderRadius:10,marginLeft:8}}>{unread} new</span>}</span>
-                <Link href="/notifications" className="pl">View All →</Link>
-              </div>
-              <div className="pb">
-                {loading ? [1,2,3,4].map(i=><div key={i} className="skel" style={{height:48,marginBottom:8}}/>) :
-                 notifs.length ? notifs.slice(0,5).map(n=>(
-                   <div key={n.id} className="notif-row">
-                     <div className="nd" style={{background:n.is_read?'rgba(255,255,255,.15)':'#60a5fa'}}/>
-                     <div><div className={`nm ${!n.is_read?'unread':''}`}>{n.message}</div><div className="nt">{new Date(n.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div></div>
-                   </div>
-                 )) : <div className="empty"><div className="empty-ico">🔔</div>No notifications</div>}
               </div>
             </div>
           </div>

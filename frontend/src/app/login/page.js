@@ -150,10 +150,11 @@ function LoginContent() {
 
         .card-ico{
           width:56px;height:56px;border-radius:16px;
-          background:#0d2340;
-          border:1px solid #0d2340;
+          background:#ffffff;
+          border:1px solid #e2e8f0;
           display:flex;align-items:center;justify-content:center;
-          margin-bottom:1.2rem;
+          margin-bottom:1.2rem;padding:4px;
+          box-shadow:0 2px 8px rgba(0,0,0,0.04);
         }
         .card-title{font-size:1.55rem;font-weight:800;color:#0d2340;letter-spacing:-.4px;margin-bottom:5px}
         .card-sub{font-size:13.5px;color:#64748b;margin-bottom:1.8rem}
@@ -184,11 +185,10 @@ function LoginContent() {
           background:#0d2340;
           border:none;border-radius:14px;color:#ffffff;font-size:15px;font-weight:800;
           cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
-          transition:all .25s;font-family:inherit;margin-top:.3rem;
-          box-shadow:0 4px 15px rgba(13,35,64,0.2);
+          transition:all .25s;font-family:inherit;box-shadow:0 4px 15px rgba(13,35,64,0.2);
         }
-        .btn:hover:not(:disabled){background:#d9232d;transform:translateY(-2px);box-shadow:0 8px 20px rgba(217,35,45,0.25)}
-        .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+        .btn:hover:not(:disabled){background:#d9232d;transform:translateY(-2px);box-shadow:0 6px 20px rgba(217,35,45,0.25)}
+        .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
         .spin{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#ffffff;border-radius:50%;animation:spin .7s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -210,7 +210,7 @@ function LoginContent() {
 
         .stamp{
           margin-top:1.6rem;padding-top:1.2rem;
-          border-top:1px solid #f1f5f9;
+          border-top:1.5px solid #bfdbfe;
           text-align:center;font-size:11px;color:#94a3b8;letter-spacing:.4px;
         }
 
@@ -227,11 +227,7 @@ function LoginContent() {
           {/* Brand */}
           <aside className="brand">
             <div className="logo-row">
-              <img src="https://www.lendi.edu.in/assets/img/black-logo.png" alt="Lendi" className="logo-img" onError={e=>e.target.style.display='none'}/>
-              <div className="logo-text">
-                <div className="ln">Lendi College</div>
-                <div className="ls">Engineering &amp; Technology</div>
-              </div>
+              <img src="/lendi-logo-transparent.png" alt="Lendi" className="logo-img" style={{ maxHeight: '55px', objectFit: 'contain' }} onError={e=>e.target.src='/lendi-logo.png'}/>
             </div>
 
             <h1 className="brand-title">Welcome to<br/><span>Lendi Portal</span></h1>
@@ -262,7 +258,7 @@ function LoginContent() {
                 {ico:'👨‍🏫',name:'Class Teachers',desc:'Approve outpasses, monitor students'},
                 {ico:'🏛️',name:'HOD / Principal',desc:'Department overview, final approvals'},
               ].map(r=>(
-                <div key={r.name} className="role-chip">
+                <div key={r.name} className="role-chip" style={{ border: '1.5px solid #bfdbfe' }}>
                   <div className="role-chip-ico">{r.ico}</div>
                   <div><div className="role-chip-name">{r.name}</div><div className="role-chip-desc">{r.desc}</div></div>
                 </div>
@@ -274,10 +270,7 @@ function LoginContent() {
           <main className="form-side">
             <div className="card">
               <div className="card-ico">
-                <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-                  <path d="M13 3L23 8.5v9L13 23 3 17.5v-9L13 3z" stroke="#ffc83c" strokeWidth="1.5" fill="rgba(255,200,60,0.15)"/>
-                  <path d="M9 13h8M13 9v8" stroke="#ffc83c" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+                <img src="/lendi-crest.png" alt="Lendi Crest" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div className="card-title">Sign In</div>
               <div className="card-sub">Access your Lendi College portal</div>

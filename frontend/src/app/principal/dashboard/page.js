@@ -184,46 +184,6 @@ export default function PrincipalDashboard() {
               </div>
             </div>
           </div>
-
-          {/* Notifications Section */}
-          <div className="panel" style={{marginTop:'1.5rem'}}>
-            <div className="ph">
-              <span className="pt">🔔 Recent Notifications {unread > 0 && <span style={{background:'#f87171',color:'#fff',fontSize:11,padding:'2px 7px',borderRadius:10,marginLeft:8}}>{unread} new</span>}</span>
-              <Link href="/notifications" className="pl">View All →</Link>
-            </div>
-            <div className="pb">
-              {loading ? [1,2,3].map(i=><div key={i} className="skel" style={{height:52,marginBottom:8}}/>)
-              : notifs.length === 0 ? <div className="empty">🔔 No notifications yet</div>
-              : notifs.slice(0,6).map(n=>{
-                  const typeMap = {action:'🔔',info:'ℹ️',success:'✅',warning:'⚠️',outpass:'🚪',announcement:'📢'};
-                  const typeIco = typeMap[n.type]||'🔔';
-                  const typeColorMap = {action:'#f87171',info:'#60a5fa',success:'#4ade80',warning:'#fbbf24'};
-                  const typeColor = typeColorMap[n.type]||'#94a3b8';
-                  const timeAgo = (() => {
-                    const diff = Date.now() - new Date(n.created_at).getTime();
-                    const mins = Math.floor(diff/60000);
-                    if (mins < 1) return 'Just now';
-                    if (mins < 60) return `${mins}m ago`;
-                    const hrs = Math.floor(mins/60);
-                    if (hrs < 24) return `${hrs}h ago`;
-                    return `${Math.floor(hrs/24)}d ago`;
-                  })();
-                  return (
-                    <Link key={n.id} href={n.outpass_id ? `/principal/outpass?id=${n.outpass_id}` : '/principal/outpass'} className="op-row" style={{opacity: n.is_read ? 0.55 : 1, textDecoration:'none', color:'inherit', display:'flex'}}>
-                      <div className="av" style={{background:`${typeColor}18`,color:typeColor,fontSize:16,width:38,height:38,borderRadius:11}}>{typeIco}</div>
-                      <div className="op-info" style={{flex:1}}>
-                        <div className="op-name" style={{color: n.is_read ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.9)'}}>
-                          {n.title || 'Notification'}
-                          {!n.is_read && <span style={{display:'inline-block',width:7,height:7,background:'#60a5fa',borderRadius:'50%',marginLeft:8,verticalAlign:'middle'}}/>}
-                        </div>
-                        <div className="op-meta">{n.message?.slice(0,65)}{n.message?.length>65?'…':''}</div>
-                      </div>
-                      <div style={{fontSize:11,color:'rgba(255,255,255,.3)',whiteSpace:'nowrap',flexShrink:0}}>{timeAgo}</div>
-                    </Link>
-                  );
-                })}
-            </div>
-          </div>
         </main>
       </div>
     </>

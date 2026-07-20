@@ -179,7 +179,7 @@ export default function RegisterPage() {
           {/* Brand */}
           <aside className="brand">
             <div className="logo-row">
-              <img src="https://www.lendi.edu.in/assets/img/black-logo.png" alt="Lendi" className="logo-img" onError={e=>e.target.style.display='none'}/>
+              <img src="/lendi-logo.png" alt="Lendi" className="logo-img" onError={e=>e.target.src='https://www.lendi.edu.in/assets/img/black-logo.png'}/>
               <div><div className="ln">Lendi College</div><div className="ls">Engineering &amp; Technology</div></div>
             </div>
             <h1 className="brand-title">Join the<br/><span>Lendi Family</span></h1>
@@ -208,8 +208,8 @@ export default function RegisterPage() {
           <main className="form-side">
             <div className="card">
               <div className="card-head">
-                <div className="card-ico">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c-5.33 0-8 2.67-8 4v1h16v-1c0-1.33-2.67-4-8-4z" stroke="#ffc83c" strokeWidth="1.4" fill="none"/></svg>
+                <div className="card-ico" style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: 4 }}>
+                  <img src="/lendi-logo.png" alt="Lendi Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
                 <div>
                   <div className="card-title">Create Account</div>

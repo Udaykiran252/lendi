@@ -88,10 +88,10 @@ export default function HodStudentsPage() {
 
           <div className="summary-row">
             {[
-              { n: students.length, l: 'Total Students', color: '#fff' },
-              { n: students.filter(s=>(s.approved_outpasses||0)>0).length, l: 'With Approved Outpasses', color: '#4ade80' },
-              { n: students.filter(s=>(s.approved_outpasses||0)>=2).length, l: 'Frequent Applicants', color: '#fbbf24' },
-              { n: students.filter(s=>!s.approved_outpasses || s.approved_outpasses===0).length, l: 'No Outpasses', color: 'rgba(255,255,255,.5)' },
+              { n: students.length, l: 'Total Students', color: '#0d2340' },
+              { n: students.filter(s=>(s.approved_outpasses||0)>0).length, l: 'With Approved Outpasses', color: '#16a34a' },
+              { n: students.filter(s=>(s.approved_outpasses||0)>=2).length, l: 'Frequent Applicants', color: '#d97706' },
+              { n: students.filter(s=>!s.approved_outpasses || s.approved_outpasses===0).length, l: 'No Outpasses', color: '#64748b' },
             ].map((s,i)=>(
               <div key={i} className="sum-card">
                 <div className="sum-n" style={{color:s.color}}>{loading?'…':s.n}</div>

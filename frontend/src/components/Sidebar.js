@@ -67,23 +67,21 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
           display:flex;flex-direction:column;
           transition:width .3s cubic-bezier(.4,0,.2,1);
           flex-shrink:0;position:sticky;top:0;height:100vh;overflow:hidden;
-          box-shadow:2px 0 10px rgba(0,0,0,0.02);
         }
         .sb-head{
-          padding:${collapsed?'18px 16px':'18px 18px'};
-          border-bottom:1px solid #f1f5f9;
-          display:flex;align-items:center;gap:10px;min-height:68px;
+          padding:${collapsed?'16px 14px':'16px 18px'};
+          border-bottom:1px solid #e2e8f0;
+          display:flex;align-items:center;gap:12px;min-height:68px;
+          background:#ffffff;
         }
         .sb-logo{
-          width:34px;height:34px;border-radius:10px;flex-shrink:0;
-          background:#0d2340;
-          border:1px solid #0d2340;
+          width:40px;height:40px;flex-shrink:0;
           display:flex;align-items:center;justify-content:center;
         }
         .sb-brand{overflow:hidden;transition:all .25s;opacity:${collapsed?0:1};width:${collapsed?'0':'auto'};white-space:nowrap}
-        .sb-name{font-size:14px;font-weight:800;color:#0d2340}
+        .sb-name{font-size:14.5px;font-weight:800;color:#0d2340;letter-spacing:-.3px}
         .sb-role{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
-        .sb-toggle{margin-left:auto;background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;display:flex;align-items:center;flex-shrink:0;transition:color .2s}
+        .sb-toggle{margin-left:auto;background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;display:flex;align-items:center;flex-shrink:0;transition:all .2s}
         .sb-toggle:hover{color:#0d2340}
         .sb-nav{flex:1;padding:14px 8px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
         .nav-item{
@@ -95,20 +93,20 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
           justify-content:${collapsed?'center':'flex-start'};
         }
         .nav-item:hover{background:#f8fafc;color:#0d2340}
-        .nav-item.active{background:rgba(245,158,11,0.12);color:#0d2340;border:1px solid rgba(245,158,11,0.3);font-weight:700}
+        .nav-item.active{background:#eff6ff;color:#2563eb;font-weight:700;border-left:3px solid #2563eb;border-radius:0 10px 10px 0}
         .nav-ico{font-size:17px;flex-shrink:0}
         .nav-lbl{opacity:${collapsed?0:1};width:${collapsed?'0':'auto'};overflow:hidden;transition:all .25s}
         .nav-badge{
-          margin-left:auto;background:#ef4444;color:#fff;
+          margin-left:auto;background:#d9232d;color:#fff;
           font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;
           display:${collapsed?'none':'inline-flex'};flex-shrink:0;
         }
         .nav-dot{
           position:absolute;top:7px;right:7px;width:7px;height:7px;
-          background:#ef4444;border-radius:50%;
+          background:#d9232d;border-radius:50%;
           display:${collapsed?'block':'none'};
         }
-        .sb-footer{padding:10px 8px;border-top:1px solid #f1f5f9}
+        .sb-footer{padding:10px 8px;border-top:1px solid #f1f5f9;background:#ffffff}
         .user-box{
           display:flex;align-items:center;gap:10px;
           padding:${collapsed?'8px':'10px 11px'};border-radius:10px;
@@ -138,7 +136,7 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
         .mob-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);backdrop-filter:blur(20px);border-top:1px solid #e2e8f0;padding:6px 0;z-index:100}
         .mob-nav{display:flex;justify-content:space-around}
         .mob-item{display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:#64748b;padding:6px 10px;border-radius:8px;transition:color .2s;font-size:10px;font-weight:600;position:relative}
-        .mob-item.active{color:#f59e0b;font-weight:700}
+        .mob-item.active{color:#2563eb;font-weight:700}
         .mob-dot{position:absolute;top:4px;right:6px;width:6px;height:6px;background:#ef4444;border-radius:50%}
         @media(max-width:768px){.sb{display:none}.mob-bar{display:block}}
       `}</style>
@@ -147,10 +145,14 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
       <aside className="sb">
         <div className="sb-head">
           <div className="sb-logo">
-            <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-              <path d="M8.5 2L15 5.5v6L8.5 15 2 11.5v-6L8.5 2z" stroke="#ffc83c" strokeWidth="1.3" fill="rgba(255,200,60,.15)"/>
-              <path d="M5.5 8.5h6M8.5 5.5v6" stroke="#ffc83c" strokeWidth="1.3" strokeLinecap="round"/>
-            </svg>
+            <img 
+              src="/lendi-crest.png" 
+              alt="Lendi Emblem" 
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              onError={(e) => {
+                e.target.src = '/lendi-logo.png';
+              }}
+            />
           </div>
           <div className="sb-brand">
             <div className="sb-name">Lendi Portal</div>

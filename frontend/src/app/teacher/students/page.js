@@ -86,10 +86,10 @@ export default function TeacherStudentsPage() {
                       const approved = s.approved_outpasses || 0;
                       const initials = s.name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
                       const statusTag = approved > 2
-                        ? { label: 'Frequent Applicant', color: '#fbbf24', bg: 'rgba(251,191,36,.12)' }
+                        ? { label: 'Frequent Applicant', color: '#d97706', bg: 'rgba(251,191,36,.12)' }
                         : approved > 0
-                        ? { label: 'Active User', color: '#4ade80', bg: 'rgba(74,222,128,.12)' }
-                        : { label: 'No Passes', color: 'rgba(255,255,255,.4)', bg: 'rgba(255,255,255,.06)' };
+                        ? { label: 'Active User', color: '#16a34a', bg: 'rgba(74,222,128,.12)' }
+                        : { label: 'No Passes', color: '#64748b', bg: '#f1f5f9' };
                       return (
                         <tr key={s.user_id}>
                           <td>
@@ -98,15 +98,15 @@ export default function TeacherStudentsPage() {
                               <div><div className="name-txt">{s.name}</div><div className="email-txt">{s.email}</div></div>
                             </div>
                           </td>
-                          <td style={{fontWeight:700,color:'rgba(255,255,255,.7)',fontFamily:'monospace'}}>{s.roll_no}</td>
+                          <td style={{fontWeight:700,color:'#0d2340',fontFamily:'monospace'}}>{s.roll_no}</td>
                           <td>Yr {s.year} · Sem {s.semester}</td>
-                          <td><span className="badge" style={{background:'rgba(96,165,250,.12)',color:'#60a5fa'}}>{s.section}</span></td>
+                          <td><span className="badge" style={{background:'rgba(37,99,235,.1)',color:'#2563eb'}}>{s.section}</span></td>
                           <td>
                             <span className="badge" style={{color:statusTag.color,background:statusTag.bg}}>
                               {statusTag.label}
                             </span>
                           </td>
-                          <td><span className="badge" style={{background:'rgba(74,222,128,.1)',color:'#4ade80'}}>{approved} approved</span></td>
+                          <td><span className="badge" style={{background:'rgba(22,163,74,.1)',color:'#16a34a'}}>{approved} approved</span></td>
                         </tr>
                       );
                     })}

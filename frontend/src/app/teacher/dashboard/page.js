@@ -111,12 +111,11 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Stats */}
-          <div className="stats">
+          <div className="stats" style={{gridTemplateColumns:'repeat(3, 1fr)'}}>
             {[
               { ico: '🎓', label: 'My Students', val: loading ? '…' : data?.students?.length || 0, bg: 'rgba(96,165,250,.12)', tag: 'tag-blue', tagLabel: user?.department, href: '/teacher/students' },
               { ico: '⏳', label: 'Pending Requests', val: loading ? '…' : pending.length, bg: 'rgba(251,191,36,.12)', tag: 'tag-warn', tagLabel: 'Need Action', href: '/teacher/outpass' },
               { ico: '✅', label: 'Approved Today', val: loading ? '…' : data?.outpasses?.filter(o => o.teacher_status === 'approved' && o.teacher_action_at?.startsWith(new Date().toISOString().slice(0,10))).length || 0, bg: 'rgba(74,222,128,.12)', tag: 'tag-ok', tagLabel: 'Today', href: '/teacher/outpass?filter=approved' },
-              { ico: '🔔', label: 'Notifications', val: loading ? '…' : notifs.length, bg: 'rgba(248,113,113,.12)', tag: unread > 0 ? 'tag-red' : 'tag-ok', tagLabel: unread > 0 ? `${unread} New` : 'All Read', href: '/notifications' },
             ].map((s, i) => (
               <Link href={s.href} key={i} className="sc" style={{textDecoration:'none',color:'inherit',display:'block'}}>
                 <div className="sc-top">
