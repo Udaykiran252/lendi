@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
-import QRCode from 'qrcode';
 
 export default function HodOutpassPage() {
   const router = useRouter();
@@ -16,39 +15,8 @@ export default function HodOutpassPage() {
   const [successId, setSuccessId] = useState(null);
   const [userRole, setUserRole] = useState('hod');
   const [notifs, setNotifs] = useState([]);
-  const [qrUrl, setQrUrl] = useState(null);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
-
-  const generateQR = useCallback(async (op) => {
-    const isStudent = !!op.student_id;
-    const qrData = [
-      '══════════════════════════',
-      '  LENDI COLLEGE OUTPASS',
-      '══════════════════════════',
-      'Outpass ID  : #' + op.id,
-      isStudent ? 'Student     : ' + op.student_name : 'Staff       : ' + op.student_name,
-      isStudent ? 'Roll No     : ' + op.roll_no : 'Role        : ' + (op.applicant_role === 'class_teacher' ? 'Teacher' : 'HOD'),
-      'Department  : ' + op.department,
-      '──────────────────────────',
-      'Destination : ' + op.destination,
-      'Reason      : ' + op.reason,
-      'From        : ' + op.from_date + ' ' + (op.from_time || ''),
-      'To          : ' + op.to_date + ' ' + (op.to_time || ''),
-      '──────────────────────────',
-      'Status      : APPROVED',
-      'Approved On : ' + (op.hod_action_at ? new Date(op.hod_action_at).toLocaleString('en-IN') : 'N/A'),
-      '══════════════════════════',
-    ].join('\n');
-    try {
-      const url = await QRCode.toDataURL(qrData, {
-        width: 240, margin: 2,
-        color: { dark: '#07111f', light: '#ffffff' },
-        errorCorrectionLevel: 'M',
-      });
-      setQrUrl(url);
-    } catch (err) { console.error('QR gen failed:', err); }
-  }, []);
 
   const load = useCallback(async (f = filter) => {
     const token = localStorage.getItem('token');
@@ -63,14 +31,14 @@ export default function HodOutpassPage() {
         const found = list.find(o => String(o.id) === String(targetId));
         if (found) {
           setSelected(found);
-          if (found.hod_status === 'approved' || found.status === 'approved') generateQR(found);
         } else if (f !== 'all') {
           setFilter('all');
         }
       }
     }
     setLoading(false);
-  }, [filter, generateQR]);
+  }, [filter]);
+
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -127,11 +95,8 @@ export default function HodOutpassPage() {
   const selectOutpass = (op) => {
     setSelected(op);
     setRemarks('');
-    setQrUrl(null);
-    if (op.hod_status === 'approved') {
-      generateQR(op);
-    }
   };
+
 
   return (
     <>
@@ -278,15 +243,18 @@ export default function HodOutpassPage() {
                     </>
                   )}
 
-                  {selected.hod_status === 'approved' && qrUrl && (
-                    <div>
-                      <div style={{fontSize:13,fontWeight:700,color:'#fbbf24',marginTop:10}}>HOD Approved</div>
-                      <div className="qr-box">
-                        <img src={qrUrl} alt="Gate Pass QR" />
-                        <div style={{fontSize:11,color:'#07111f',fontWeight:700,marginTop:4}}>Gate Pass QR Code</div>
-                      </div>
+                  {selected.hod_status === 'approved' && (
+                    <div style={{fontSize:13,fontWeight:700,color:'#fbbf24',marginTop:12,padding:'10px 14px',background:'rgba(251,191,36,.1)',border:'1px solid rgba(251,191,36,.25)',borderRadius:10,textAlign:'center'}}>
+                      ✓ Approved by HOD
                     </div>
                   )}
+
+                  {selected.hod_status === 'rejected' && (
+                    <div style={{fontSize:13,fontWeight:700,color:'#f87171',marginTop:12,padding:'10px 14px',background:'rgba(248,113,113,.1)',border:'1px solid rgba(248,113,113,.25)',borderRadius:10,textAlign:'center'}}>
+                      ✕ Rejected by HOD
+                    </div>
+                  )}
+
                 </div>
               )}
             </div>
