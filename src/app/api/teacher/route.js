@@ -26,14 +26,17 @@ export async function GET(request) {
     else if (filter === 'approved') query += ` AND o.teacher_status = 'approved'`;
     else if (filter === 'rejected') query += ` AND o.teacher_status = 'rejected'`;
   } else if (user.role === 'hod') {
-    query += ` WHERE LOWER(TRIM(u.department)) = LOWER(TRIM('${user.department}'))`;
-    if (filter === 'pending') query += ` AND o.hod_status = 'pending' AND o.teacher_status = 'approved'`;
+    // HOD only sees requests that were APPROVED by the teacher
+    query += ` WHERE LOWER(TRIM(u.department)) = LOWER(TRIM('${user.department}')) AND o.teacher_status = 'approved'`;
+    if (filter === 'pending') query += ` AND o.hod_status = 'pending'`;
     else if (filter === 'approved') query += ` AND o.hod_status = 'approved'`;
     else if (filter === 'rejected') query += ` AND o.hod_status = 'rejected'`;
   } else if (user.role === 'principal') {
-    if (filter === 'pending') query += ` WHERE o.status = 'pending_principal'`;
-    else if (filter === 'approved') query += ` WHERE o.status = 'approved'`;
-    else if (filter === 'rejected') query += ` WHERE o.status = 'rejected'`;
+    // Principal only sees requests that were APPROVED by both Teacher AND HOD
+    query += ` WHERE (o.teacher_status = 'approved' AND o.hod_status = 'approved')`;
+    if (filter === 'pending') query += ` AND o.status = 'pending_principal'`;
+    else if (filter === 'approved') query += ` AND o.status = 'approved'`;
+    else if (filter === 'rejected') query += ` AND o.principal_status = 'rejected'`;
   }
 
   query += ` ORDER BY o.created_at DESC`;

@@ -80,7 +80,7 @@ export async function PATCH(request, context) {
         op.id
       );
 
-      // Notify HOD
+      // Notify HOD ONLY IF APPROVED
       if (action === 'approve') {
         const hod = db.prepare(`SELECT id FROM users WHERE LOWER(TRIM(department))=LOWER(TRIM(?)) AND role='hod' LIMIT 1`).get(user.department || op.department);
         if (hod) {
@@ -92,11 +92,14 @@ export async function PATCH(request, context) {
       }
 
     } else if (user.role === 'hod') {
-      const newTeacherStatus = action === 'approve' ? (op.teacher_status === 'pending' ? 'approved' : op.teacher_status) : op.teacher_status;
+      // Check if teacher rejected this outpass
+      if (op.teacher_status === 'rejected' || op.status === 'rejected') {
+        return NextResponse.json({ error: 'This outpass was rejected by the Class Teacher and cannot be processed by HOD.' }, { status: 400 });
+      }
 
-      db.prepare(`UPDATE outpasses SET hod_status=?, teacher_status=?, hod_remarks=?, hod_action_at=?,
+      db.prepare(`UPDATE outpasses SET hod_status=?, hod_remarks=?, hod_action_at=?,
         status=? WHERE id=?`).run(
-        statusVal, newTeacherStatus, remarks||'', now,
+        statusVal, remarks||'', now,
         action === 'approve' ? 'pending_principal' : 'rejected',
         op.id
       );
@@ -112,7 +115,7 @@ export async function PATCH(request, context) {
         op.id
       );
 
-      // Notify Principal
+      // Notify Principal ONLY IF APPROVED
       if (action === 'approve') {
         const principal = db.prepare(`SELECT id FROM users WHERE role='principal' LIMIT 1`).get();
         if (principal) {
@@ -124,12 +127,14 @@ export async function PATCH(request, context) {
       }
 
     } else if (user.role === 'principal') {
-      const newTeacherStatus = action === 'approve' ? 'approved' : op.teacher_status;
-      const newHodStatus = action === 'approve' ? 'approved' : op.hod_status;
+      // Check if teacher or HOD rejected this outpass
+      if (op.teacher_status === 'rejected' || op.hod_status === 'rejected' || op.status === 'rejected') {
+        return NextResponse.json({ error: 'This outpass was rejected at an earlier stage and cannot be approved by Principal.' }, { status: 400 });
+      }
 
-      db.prepare(`UPDATE outpasses SET principal_status=?, teacher_status=?, hod_status=?, principal_remarks=?, principal_action_at=?,
+      db.prepare(`UPDATE outpasses SET principal_status=?, principal_remarks=?, principal_action_at=?,
         status=? WHERE id=?`).run(
-        statusVal, newTeacherStatus, newHodStatus, remarks||'', now,
+        statusVal, remarks||'', now,
         action === 'approve' ? 'approved' : 'rejected',
         op.id
       );
