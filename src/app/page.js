@@ -1227,40 +1227,6 @@ export default function LendiHomepage() {
           
           <ul className="hp-nav-list">
             <li className="hp-nav-item active"><a className="hp-nav-link" href="#"><i className="fa-solid fa-house me-1"></i> Home</a></li>
-            
-            <li className={`hp-nav-item ${activeDropdown === 1 ? 'dropdown-active' : ''}`}>
-              <a className="hp-nav-link" onClick={() => toggleDropdown(1)}>About Us <i className="fa-solid fa-chevron-down ms-1" style={{fontSize: '9px'}}></i></a>
-              <div className="hp-dropdown-menu">
-                <a className="hp-dropdown-item" href="#">About the College</a>
-                <a className="hp-dropdown-item" href="#">Vision &amp; Mission</a>
-                <a className="hp-dropdown-item" href="#">Accreditations</a>
-                <a className="hp-dropdown-item" href="#">Courses Offered</a>
-              </div>
-            </li>
-            
-            <li className={`hp-nav-item ${activeDropdown === 2 ? 'dropdown-active' : ''}`}>
-              <a className="hp-nav-link" onClick={() => toggleDropdown(2)}>Administration <i className="fa-solid fa-chevron-down ms-1" style={{fontSize: '9px'}}></i></a>
-              <div className="hp-dropdown-menu">
-                <a className="hp-dropdown-item" href="#">Organizational Chart</a>
-                <a className="hp-dropdown-item" href="#">Management Committee</a>
-                <a className="hp-dropdown-item" href="#">Governing Body</a>
-              </div>
-            </li>
-            
-            <li className={`hp-nav-item ${activeDropdown === 3 ? 'dropdown-active' : ''}`}>
-              <a className="hp-nav-link" onClick={() => toggleDropdown(3)}>Autonomous <i className="fa-solid fa-chevron-down ms-1" style={{fontSize: '9px'}}></i></a>
-              <div className="hp-dropdown-menu">
-                <a className="hp-dropdown-item" href="#">Regulations</a>
-                <a className="hp-dropdown-item" href="#">Academic Council</a>
-                <a className="hp-dropdown-item" href="#">Board of Studies</a>
-              </div>
-            </li>
-
-            <li className="hp-nav-item"><a className="hp-nav-link" href="#">Examination Cell</a></li>
-            <li className="hp-nav-item"><a className="hp-nav-link" href="#">Departments</a></li>
-            <li className="hp-nav-item"><a className="hp-nav-link" href="#">Placements</a></li>
-            <li className="hp-nav-item"><a className="hp-nav-link" href="#">Research</a></li>
-            <li className="hp-nav-item"><a className="hp-nav-link" href="#">Lendi Radio</a></li>
           </ul>
 
           <Link href="/login" className="hp-outpass-btn">
