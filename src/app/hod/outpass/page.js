@@ -20,6 +20,36 @@ export default function HodOutpassPage() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
+  const generateQR = useCallback(async (op) => {
+    const isStudent = !!op.student_id;
+    const qrData = [
+      '══════════════════════════',
+      '  LENDI COLLEGE OUTPASS',
+      '══════════════════════════',
+      'Outpass ID  : #' + op.id,
+      isStudent ? 'Student     : ' + op.student_name : 'Staff       : ' + op.student_name,
+      isStudent ? 'Roll No     : ' + op.roll_no : 'Role        : ' + (op.applicant_role === 'class_teacher' ? 'Teacher' : 'HOD'),
+      'Department  : ' + op.department,
+      '──────────────────────────',
+      'Destination : ' + op.destination,
+      'Reason      : ' + op.reason,
+      'From        : ' + op.from_date + ' ' + (op.from_time || ''),
+      'To          : ' + op.to_date + ' ' + (op.to_time || ''),
+      '──────────────────────────',
+      'Status      : APPROVED',
+      'Approved On : ' + (op.hod_action_at ? new Date(op.hod_action_at).toLocaleString('en-IN') : 'N/A'),
+      '══════════════════════════',
+    ].join('\n');
+    try {
+      const url = await QRCode.toDataURL(qrData, {
+        width: 240, margin: 2,
+        color: { dark: '#07111f', light: '#ffffff' },
+        errorCorrectionLevel: 'M',
+      });
+      setQrUrl(url);
+    } catch (err) { console.error('QR gen failed:', err); }
+  }, []);
+
   const load = useCallback(async (f = filter) => {
     const token = localStorage.getItem('token');
     const res = await fetch(`/api/teacher?filter=${f}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -53,39 +83,9 @@ export default function HodOutpassPage() {
     // Fetch notifications
     fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } })
       .then(r=>r.ok ? r.json() : {}).then(d=>setNotifs(d.notifications||[]));
-  }, [filter]);
+  }, [filter, load, router]);
 
   const unread = notifs.filter(n=>!n.is_read).length;
-
-  const generateQR = useCallback(async (op) => {
-    const isStudent = !!op.student_id;
-    const qrData = [
-      '══════════════════════════',
-      '  LENDI COLLEGE OUTPASS',
-      '══════════════════════════',
-      'Outpass ID  : #' + op.id,
-      isStudent ? 'Student     : ' + op.student_name : 'Staff       : ' + op.student_name,
-      isStudent ? 'Roll No     : ' + op.roll_no : 'Role        : ' + (op.applicant_role === 'class_teacher' ? 'Teacher' : 'HOD'),
-      'Department  : ' + op.department,
-      '──────────────────────────',
-      'Destination : ' + op.destination,
-      'Reason      : ' + op.reason,
-      'From        : ' + op.from_date + ' ' + (op.from_time || ''),
-      'To          : ' + op.to_date + ' ' + (op.to_time || ''),
-      '──────────────────────────',
-      'Status      : APPROVED',
-      'Approved On : ' + (op.hod_action_at ? new Date(op.hod_action_at).toLocaleString('en-IN') : 'N/A'),
-      '══════════════════════════',
-    ].join('\n');
-    try {
-      const url = await QRCode.toDataURL(qrData, {
-        width: 240, margin: 2,
-        color: { dark: '#07111f', light: '#ffffff' },
-        errorCorrectionLevel: 'M',
-      });
-      setQrUrl(url);
-    } catch (err) { console.error('QR gen failed:', err); }
-  }, []);
 
   const handleAction = async (id, action) => {
     setActioning(true);
@@ -118,7 +118,6 @@ export default function HodOutpassPage() {
     }
   };
 
-  // For HOD: show outpasses where teacher approved + hod pending
   const displayOutpasses = filter === 'pending'
     ? outpasses.filter(o => o.teacher_status === 'approved' && o.hod_status === 'pending')
     : filter === 'approved'
@@ -140,228 +139,161 @@ export default function HodOutpassPage() {
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:#07111f;color:#fff}
         .root{display:flex;min-height:100vh}
-        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto}
+        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;max-width:1200px}
         .page-title{font-size:1.5rem;font-weight:800;margin-bottom:.3rem}
         .page-sub{font-size:13.5px;color:rgba(255,255,255,.42);margin-bottom:1.5rem}
         .toolbar{display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap}
-        .fb{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
-        .fb.on{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3)}
-        .fb.off{background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.08)}
+        .fb{padding:8px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all .2s;display:flex;align-items:center;gap:6px}
+        .fb.on{background:rgba(251,191,36,.18);color:#fbbf24;border:1px solid rgba(251,191,36,.35)}
+        .fb.off{background:rgba(255,255,255,.05);color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.08)}
         .fb.off:hover{background:rgba(255,255,255,.09);color:#fff}
-        .layout{display:grid;grid-template-columns:1fr 390px;gap:1.5rem}
-        .card-list{display:flex;flex-direction:column;gap:10px}
-        .op-card{
-          background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
-          border-radius:14px;padding:16px;cursor:pointer;transition:all .2s;
-          border-left:3px solid transparent;
-        }
-        .op-card:hover{background:rgba(255,255,255,.07)}
-        .op-card.sel{border-color:rgba(251,191,36,.4)!important;background:rgba(251,191,36,.05)}
-        .op-card.p{border-left-color:#fbbf24}
-        .op-card.a{border-left-color:#4ade80}
-        .op-card.r{border-left-color:#f87171}
-        .op-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
-        .student-row{display:flex;align-items:center;gap:10px}
-        .av{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,rgba(251,191,36,.2),rgba(251,191,36,.07));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fbbf24;flex-shrink:0}
-        .sname{font-size:13.5px;font-weight:700;color:rgba(255,255,255,.9)}
-        .smeta{font-size:11.5px;color:rgba(255,255,255,.38);margin-top:2px}
-        .stag{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:7px;white-space:nowrap}
-        .op-reason{font-size:13px;color:rgba(255,255,255,.72);margin-bottom:6px;line-height:1.5}
-        .op-details{display:flex;gap:14px;flex-wrap:wrap}
-        .op-det{font-size:11.5px;color:rgba(255,255,255,.38)}
-        .op-det strong{color:rgba(255,255,255,.6)}
-        .teacher-status{
-          margin-top:8px;padding:7px 10px;border-radius:8px;
-          background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.18);
-          font-size:12px;color:#86efac;display:flex;align-items:center;gap:6px;
-        }
+        .layout{display:grid;grid-template-columns:1fr 380px;gap:1.5rem}
+        .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden}
+        .op-item{padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;transition:background .15s;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+        .op-item:hover{background:rgba(255,255,255,.05)}
+        .op-item.sel{background:rgba(251,191,36,.1);border-left:3px solid #fbbf24}
+        .op-name{font-size:14.5px;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:2px}
+        .op-sub{font-size:12px;color:rgba(255,255,255,.4);line-height:1.5}
+        .op-tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap}
+        .op-tag.student{background:rgba(96,165,250,.12);color:#60a5fa}
+        .op-tag.teacher{background:rgba(74,222,128,.12);color:#4ade80}
 
-        .detail{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1.6rem;position:sticky;top:1rem;height:fit-content;max-height:calc(100vh - 2rem);overflow-y:auto}
-        .det-title{font-size:14px;font-weight:800;color:#fff;margin-bottom:1.3rem;padding-bottom:1rem;border-bottom:1px solid rgba(255,255,255,.07)}
-        .det-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-        .det-row:last-of-type{border-bottom:none}
-        .dk{font-size:12px;color:rgba(255,255,255,.38);font-weight:600}
-        .dv{font-size:13px;color:rgba(255,255,255,.82);font-weight:600;text-align:right;max-width:200px}
+        .panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;position:sticky;top:2rem}
+        .panel-title{font-size:15px;font-weight:800;margin-bottom:1rem;color:#fff;display:flex;justify-content:space-between;align-items:center}
+        .info-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:1.2rem}
+        .info-row{display:flex;justify-content:space-between;font-size:13px}
+        .info-lbl{color:rgba(255,255,255,.4)}
+        .info-val{color:rgba(255,255,255,.85);font-weight:600;text-align:right;max-width:60%}
+        .reason-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;font-size:13px;color:rgba(255,255,255,.75);margin-bottom:1.2rem;line-height:1.5}
+        .textarea{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.11);border-radius:10px;color:#fff;font-size:13.5px;padding:10px 12px;outline:none;resize:vertical;min-height:70px;margin-bottom:1rem;font-family:inherit}
+        .textarea:focus{border-color:rgba(251,191,36,.5)}
+        .act-btns{display:flex;gap:10px}
+        .btn-app{flex:1;height:44px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:10px;color:#07111f;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .2s}
+        .btn-app:hover{opacity:.9}
+        .btn-rej{flex:1;height:44px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);border-radius:10px;color:#f87171;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+        .btn-rej:hover{background:rgba(248,113,113,.2)}
+        .btn-app:disabled,.btn-rej:disabled{opacity:.5;cursor:not-allowed}
 
-        .rl{font-size:12px;font-weight:600;color:rgba(255,255,255,.5);margin-bottom:6px;margin-top:1.2rem;display:block}
-        .ri{width:100%;padding:10px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:13.5px;resize:vertical;min-height:80px;outline:none;transition:border-color .2s;font-family:inherit}
-        .ri:focus{border-color:rgba(251,191,36,.5)}
-        .ri::placeholder{color:rgba(255,255,255,.22)}
-        .act-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:1rem}
-        .btn-ap{height:48px;background:linear-gradient(135deg,rgba(74,222,128,.2),rgba(74,222,128,.1));border:1px solid rgba(74,222,128,.35);border-radius:11px;color:#4ade80;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s}
-        .btn-ap:hover{background:linear-gradient(135deg,rgba(74,222,128,.3),rgba(74,222,128,.15))}
-        .btn-rj{height:48px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:11px;color:#f87171;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s}
-        .btn-rj:hover{background:rgba(248,113,113,.2)}
-        .btn-ap:disabled,.btn-rj:disabled{opacity:.5;cursor:not-allowed}
-
-        .empty{text-align:center;padding:3rem;color:rgba(255,255,255,.3)}
-        .skel{background:rgba(255,255,255,.06);border-radius:10px;animation:sh 1.5s infinite}
+        .success-banner{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:12px;padding:14px;margin-bottom:1rem;font-size:13px;color:#4ade80;display:flex;align-items:center;gap:10px}
+        .skel{background:rgba(255,255,255,.06);border-radius:10px;animation:sh 1.5s infinite;margin-bottom:8px}
         @keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
-        .toast{position:fixed;bottom:2rem;right:2rem;z-index:200;background:#0d2240;border:1px solid rgba(251,191,36,.3);border-radius:12px;padding:13px 18px;font-size:13.5px;font-weight:600;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.4);animation:si .3s ease}
-        @keyframes si{from{transform:translateX(30px);opacity:0}to{transform:translateX(0);opacity:1}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .qr-section{margin-top:1.2rem;padding:16px;background:rgba(74,222,128,.04);border:1px solid rgba(74,222,128,.15);border-radius:14px;text-align:center}
-        .qr-section-title{font-size:13px;font-weight:700;color:#86efac;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px}
-        .qr-wrap{display:inline-block;padding:12px;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.2);margin-bottom:10px}
-        .qr-wrap img{display:block;width:180px;height:180px}
-        .qr-download-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.25);border-radius:8px;color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
-        .qr-download-btn:hover{background:rgba(74,222,128,.2)}
-        .no-sel{text-align:center;padding:3rem 1rem;color:rgba(255,255,255,.25);font-size:13px}
-        @media(max-width:1100px){.layout{grid-template-columns:1fr}.detail{position:static}}
-        @media(max-width:768px){.main{padding:1.2rem;padding-bottom:80px}}
+        .toast{position:fixed;bottom:2rem;right:2rem;z-index:200;background:#0d2240;border:1px solid rgba(251,191,36,.3);border-radius:12px;padding:13px 18px;font-size:13.5px;font-weight:600;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+        .empty-p{text-align:center;padding:3rem 1rem;color:rgba(255,255,255,.3);font-size:13.5px}
+        .qr-box{text-align:center;padding:12px;background:#fff;border-radius:12px;margin-top:1rem}
+        .qr-box img{width:180px;height:180px;display:block;margin:0 auto}
+
+        @media(max-width:900px){.layout{grid-template-columns:1fr}.panel{position:static}.main{padding:1.2rem;padding-bottom:80px}}
       `}</style>
+
       <div className="root">
-        <Sidebar pendingCount={outpasses.filter(o=>o.teacher_status==='approved'&&o.hod_status==='pending').length} unreadCount={unread} />
+        <Sidebar unreadCount={unread} />
         <main className="main">
-          <div className="page-title">🏛️ HOD Outpass Approvals</div>
-          <div className="page-sub">Final approval authority for outpass requests in your department</div>
+          <div className="page-title">📋 HOD Outpass Approvals</div>
+          <div className="page-sub">Review outpasses approved by Class Teachers in your department</div>
+
           <div className="toolbar">
-            {['pending','approved','rejected'].map(f=>(
-              <button key={f} className={`fb ${filter===f?'on':'off'}`} onClick={()=>{setFilter(f);setSelected(null);}}>
-                {f.charAt(0).toUpperCase()+f.slice(1)}
-                {f==='pending' && outpasses.filter(o=>o.teacher_status==='approved'&&o.hod_status==='pending').length > 0 &&
-                  <span style={{marginLeft:6,background:'#f87171',color:'#fff',fontSize:10,padding:'1px 6px',borderRadius:8}}>
-                    {outpasses.filter(o=>o.teacher_status==='approved'&&o.hod_status==='pending').length}
-                  </span>}
+            {[
+              { id: 'pending', label: '⏳ Awaiting My Approval', cnt: outpasses.filter(o => o.teacher_status === 'approved' && o.hod_status === 'pending').length },
+              { id: 'approved', label: '✅ Approved by Me', cnt: null },
+              { id: 'rejected', label: '❌ Rejected by Me', cnt: null },
+              { id: 'all', label: '📋 All Dept Requests', cnt: null },
+            ].map(f => (
+              <button key={f.id} className={`fb ${filter === f.id ? 'on' : 'off'}`} onClick={() => { setFilter(f.id); setSelected(null); load(f.id); }}>
+                {f.label} {f.cnt !== null && f.cnt > 0 ? `(${f.cnt})` : ''}
               </button>
             ))}
           </div>
 
           <div className="layout">
-            <div className="card-list">
-              {loading ? [1,2,3].map(i=><div key={i} className="skel" style={{height:120}}/>) :
-               displayOutpasses.length === 0 ? <div className="empty"><div style={{fontSize:40,marginBottom:8}}>✅</div>No {filter} approvals</div> :
-               displayOutpasses.map(op=>{
-                 const initials = op.student_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
-                 const hodSt = op.hod_status;
-                 const stColor = hodSt==='approved'?'#4ade80':hodSt==='rejected'?'#f87171':'#fbbf24';
-                 const stBg = hodSt==='approved'?'rgba(74,222,128,.12)':hodSt==='rejected'?'rgba(248,113,113,.12)':'rgba(251,191,36,.12)';
-                 return (
-                   <div key={op.id} className={`op-card ${hodSt==='pending'?'p':hodSt==='approved'?'a':'r'}${selected?.id===op.id?' sel':''}`}
-                     onClick={()=>selectOutpass(op)}>
-                     <div className="op-top">
-                       <div className="student-row">
-                         <div className="av">{initials}</div>
-                         <div>
-                           <div className="sname">{op.student_name}</div>
-                           <div className="smeta">
-                             {op.student_id ? `${op.roll_no} · Yr ${op.year} · ${op.department}` : `Faculty · ${op.applicant_role === 'class_teacher' ? 'Teacher' : 'HOD'} · ${op.department}`}
-                           </div>
-                         </div>
-                       </div>
-                       <span className="stag" style={{color:stColor,background:stBg}}>{hodSt==='pending'?'Awaiting HOD':hodSt.charAt(0).toUpperCase()+hodSt.slice(1)}</span>
-                     </div>
-                     <div className="op-reason">📝 {op.reason}</div>
-                     <div className="op-details">
-                       <div className="op-det"><strong>📍</strong> {op.destination}</div>
-                       <div className="op-det"><strong>📅</strong> {op.from_date}{op.to_date!==op.from_date?` → ${op.to_date}`:''}</div>
-                       <div className="op-det"><strong>🕐</strong> {op.from_time} – {op.to_time}</div>
-                     </div>
-                     <div className="teacher-status">
-                       <span>👨‍🏫</span> {op.student_id ? 'Class Teacher approved this request' : 'Self-approved (Staff Submission)'}
-                       {op.student_id && op.teacher_remarks && <span style={{color:'rgba(255,255,255,.5)',marginLeft:4}}>· "{op.teacher_remarks}"</span>}
-                     </div>
-                   </div>
-                 );
-               })}
-            </div>
-
-            <div className="detail">
-              {!selected ? (
-                <div className="no-sel"><div style={{fontSize:36,marginBottom:8}}>👈</div>Select a request to review</div>
-              ) : (
-                <>
-                  <div className="det-title">📋 Full Outpass Details</div>
-                  {(!!selected.student_id ? [
-                    ['Student Name', selected.student_name],
-                    ['Roll Number', selected.roll_no],
-                    ['Department', selected.department],
-                    ['Year / Semester', `Year ${selected.year} · Sem ${selected.semester}`],
-                    ['Section', selected.section],
-                    ['Reason', selected.reason],
-                    ['Destination', selected.destination],
-                    ['From Date', selected.from_date],
-                    ['To Date', selected.to_date],
-                    ['Time', `${selected.from_time} – ${selected.to_time}`],
-                    ['Teacher Status', selected.teacher_status === 'approved' ? '✅ Approved' : '❌ Rejected'],
-                    ['Teacher Remarks', selected.teacher_remarks || '—'],
-                    ['Applied On', new Date(selected.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})],
-                  ] : [
-                    ['Staff Name', selected.student_name],
-                    ['Role', selected.applicant_role === 'class_teacher' ? 'Teacher' : 'HOD'],
-                    ['Department', selected.department],
-                    ['Reason', selected.reason],
-                    ['Destination', selected.destination],
-                    ['From Date', selected.from_date],
-                    ['To Date', selected.to_date],
-                    ['Time', `${selected.from_time} – ${selected.to_time}`],
-                    ['Applied On', new Date(selected.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})],
-                  ]).map(([k,v])=>(
-                    <div key={k} className="det-row"><span className="dk">{k}</span><span className="dv">{v}</span></div>
-                  ))}
-
-                  {selected.hod_status === 'pending' && selected.teacher_status === 'approved' && successId !== selected.id && (
-                    <>
-                      <label className="rl">Your Remarks (optional)</label>
-                      <textarea className="ri" placeholder="Add remarks for your decision..."
-                        value={remarks} onChange={e=>setRemarks(e.target.value)} rows={3}/>
-                      <div className="act-btns">
-                        <button className="btn-ap" disabled={actioning} onClick={()=>handleAction(selected.id,'approve')}>
-                          {actioning ? <span style={{display:'flex',alignItems:'center',gap:6,justifyContent:'center'}}><span style={{width:16,height:16,border:'2px solid rgba(74,222,128,.3)',borderTopColor:'#4ade80',borderRadius:'50%',animation:'spin .7s linear infinite',display:'inline-block'}}/> Processing</span> : '✅ Approve'}
-                        </button>
-                        <button className="btn-rj" disabled={actioning} onClick={()=>handleAction(selected.id,'reject')}>
-                          {actioning ? '…' : '❌ Reject'}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                  {selected.hod_status === 'pending' && successId === selected.id && (
-                    <div style={{marginTop:'1rem',padding:'16px',background:'linear-gradient(135deg,rgba(74,222,128,.12),rgba(74,222,128,.06))',border:'1px solid rgba(74,222,128,.3)',borderRadius:12,fontSize:13.5,color:'#86efac',textAlign:'center',lineHeight:1.6}}>
-                      <div style={{fontSize:22,marginBottom:6}}>✅</div>
-                      <div style={{fontWeight:800,fontSize:14,color:'#4ade80',marginBottom:4}}>Request Approved!</div>
-                      <div style={{color:'rgba(255,255,255,.7)'}}>The request has been passed to the Principal for final approval.</div>
-                    </div>
-                  )}
-                  {selected.hod_status === 'approved' && (
-                    <>
-                      <div style={{marginTop:'1rem',padding:'12px',background:'rgba(74,222,128,.08)',border:'1px solid rgba(74,222,128,.2)',borderRadius:10,fontSize:13,color:'#86efac'}}>
-                        ✅ You approved this outpass. Sent to Principal for final approval.
-                        {selected.hod_remarks&&<div style={{marginTop:6,color:'rgba(255,255,255,.5)'}}>Remarks: {selected.hod_remarks}</div>}
-                      </div>
-                      {/* QR Code for approved outpass */}
-                      {qrUrl && (
-                        <div className="qr-section">
-                          <div className="qr-section-title">
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="10" y="10" width="4" height="4" rx=".5" stroke="currentColor" strokeWidth="1.2"/></svg>
-                            Gate Pass QR Code
-                          </div>
-                          <div className="qr-wrap">
-                            <img src={qrUrl} alt="Outpass QR" />
-                          </div>
-                          <div>
-                            <button className="qr-download-btn" onClick={() => {
-                              const a = document.createElement('a');
-                              a.href = qrUrl;
-                              a.download = `outpass_${selected.id}_qr.png`;
-                              a.click();
-                            }}>📥 Download QR</button>
+            <div>
+              {loading ? [1,2,3,4].map(i=><div key={i} className="skel" style={{height:72}}/>) :
+               displayOutpasses.length === 0 ? (
+                <div className="card empty-p">No {filter} outpasses found.</div>
+               ) : (
+                <div className="card">
+                  {displayOutpasses.map(op => {
+                    const isSel = selected?.id === op.id;
+                    const applicantRole = op.applicant_role || (op.student_id ? 'student' : 'teacher');
+                    return (
+                      <div key={op.id} className={`op-item ${isSel ? 'sel' : ''}`} onClick={() => selectOutpass(op)}>
+                        <div>
+                          <div className="op-name">{op.student_name || 'Applicant'}</div>
+                          <div className="op-sub">
+                            {op.student_id ? `Roll: ${op.roll_no || 'N/A'}` : `Teacher (${op.department})`}<br/>
+                            Destination: <strong>{op.destination}</strong> · Date: {op.from_date}
                           </div>
                         </div>
-                      )}
-                    </>
-                  )}
-                  {selected.hod_status === 'rejected' && (
-                    <div style={{marginTop:'1rem',padding:'12px',background:'rgba(248,113,113,.08)',border:'1px solid rgba(248,113,113,.2)',borderRadius:10,fontSize:13,color:'#fca5a5'}}>
-                      ❌ You rejected this outpass.
-                      {selected.hod_remarks&&<div style={{marginTop:6}}>Reason: {selected.hod_remarks}</div>}
+                        <span className={`op-tag ${applicantRole}`}>{applicantRole.toUpperCase()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+               )}
+            </div>
+
+            <div>
+              {!selected ? (
+                <div className="panel empty-p">Select an outpass request to view details and take action</div>
+              ) : (
+                <div className="panel">
+                  {successId === selected.id && (
+                    <div className="success-banner">
+                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.5"/><path d="M5 9l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      Passed to Principal for final approval
                     </div>
                   )}
-                </>
+
+                  <div className="panel-title">
+                    <span>Outpass #{selected.id}</span>
+                    <span className={`op-tag ${selected.applicant_role || 'student'}`}>
+                      {(selected.applicant_role || 'student').toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="info-grid">
+                    <div className="info-row"><span className="info-lbl">Applicant</span><span className="info-val">{selected.student_name}</span></div>
+                    {selected.student_id && <div className="info-row"><span className="info-lbl">Roll Number</span><span className="info-val">{selected.roll_no}</span></div>}
+                    <div className="info-row"><span className="info-lbl">Destination</span><span className="info-val">{selected.destination}</span></div>
+                    <div className="info-row"><span className="info-lbl">From</span><span className="info-val">{selected.from_date} {selected.from_time}</span></div>
+                    <div className="info-row"><span className="info-lbl">To</span><span className="info-val">{selected.to_date} {selected.to_time}</span></div>
+                    <div className="info-row"><span className="info-lbl">Teacher Status</span><span className="info-val" style={{color:'#4ade80'}}>✓ Approved</span></div>
+                    <div className="info-row"><span className="info-lbl">Teacher Remarks</span><span className="info-val">{selected.teacher_remarks || '—'}</span></div>
+                  </div>
+
+                  <div style={{fontSize:12,color:'rgba(255,255,255,.4)',marginBottom:4}}>Reason for Outpass</div>
+                  <div className="reason-box">{selected.reason}</div>
+
+                  {selected.hod_status === 'pending' && selected.teacher_status === 'approved' && (
+                    <>
+                      <textarea className="textarea" placeholder="Add remarks (optional)..."
+                        value={remarks} onChange={e => setRemarks(e.target.value)} />
+                      <div className="act-btns">
+                        <button className="btn-app" disabled={actioning} onClick={() => handleAction(selected.id, 'approve')}>
+                          {actioning ? 'Approving...' : '✓ Approve & Pass to Principal'}
+                        </button>
+                        <button className="btn-rej" disabled={actioning} onClick={() => handleAction(selected.id, 'reject')}>
+                          Reject
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {selected.hod_status === 'approved' && qrUrl && (
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:'#fbbf24',marginTop:10}}>HOD Approved</div>
+                      <div className="qr-box">
+                        <img src={qrUrl} alt="Gate Pass QR" />
+                        <div style={{fontSize:11,color:'#07111f',fontWeight:700,marginTop:4}}>Gate Pass QR Code</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
         </main>
       </div>
+
       {toast && <div className="toast">{toast}</div>}
     </>
   );
