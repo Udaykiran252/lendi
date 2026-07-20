@@ -1,16 +1,17 @@
-import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
-import { verifyToken } from '@/lib/auth';
+const express = require('express');
+const router = express.Router();
+const { getDb } = require('../lib/db');
+const { verifyToken } = require('../lib/auth');
 
-export async function GET(request) {
-  const user = verifyToken(request);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!['hod','principal','class_teacher'].includes(user.role))
-    return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+router.get('/', (req, res) => {
+  const user = verifyToken(req.headers['authorization']);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  if (!['hod', 'principal', 'class_teacher'].includes(user.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
 
   const db = getDb();
-  const { searchParams } = new URL(request.url);
-  const type = searchParams.get('type') || 'students';
+  const type = req.query.type || 'students';
 
   if (type === 'students') {
     const whereClause = user.role === 'principal' ? '' : `WHERE u.department = '${user.department}'`;
@@ -25,17 +26,16 @@ export async function GET(request) {
       ORDER BY u.department, s.roll_no
     `).all();
 
-    return NextResponse.json({
+    return res.json({
       students: students.map(s => ({
         ...s,
         attendance_pct: s.total_classes > 0 ? Math.round((s.present_count / s.total_classes) * 100) : 0
       }))
     });
   }
+
   if (type === 'staff_attendance') {
-    if (user.role !== 'principal') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
+    if (user.role !== 'principal') return res.status(403).json({ error: 'Access denied' });
     const staff = db.prepare(`
       SELECT u.id, u.name, u.email, u.role, u.department,
              (SELECT COUNT(*) FROM staff_attendance sa WHERE sa.user_id = u.id) as total_days,
@@ -46,7 +46,7 @@ export async function GET(request) {
       ORDER BY u.role, u.name
     `).all();
 
-    return NextResponse.json({
+    return res.json({
       staff: staff.map(s => ({
         ...s,
         attendance_pct: s.total_days > 0 ? Math.round((s.present_days / s.total_days) * 100) : 0,
@@ -60,7 +60,6 @@ export async function GET(request) {
     const deptFilter = dept ? `AND u.department = '${dept}'` : '';
 
     const totalStudents = db.prepare(`SELECT COUNT(*) as c FROM users u WHERE u.role='student' ${deptFilter}`).get().c;
-    
     let pendingOutpasses = 0;
     let approvedToday = 0;
 
@@ -90,8 +89,10 @@ export async function GET(request) {
       GROUP BY s.id HAVING (COUNT(CASE WHEN a.status='present' THEN 1 END)*100.0/COUNT(a.id)) < 75
     `).all().length;
 
-    return NextResponse.json({ totalStudents, pendingOutpasses, approvedToday, lowAttendance });
+    return res.json({ totalStudents, pendingOutpasses, approvedToday, lowAttendance });
   }
 
-  return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
-}
+  return res.status(400).json({ error: 'Invalid type' });
+});
+
+module.exports = router;

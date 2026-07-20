@@ -1,17 +1,17 @@
-import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
-import { verifyToken } from '@/lib/auth';
-import bcrypt from 'bcryptjs';
+const express = require('express');
+const router = express.Router();
+const bcrypt = require('bcryptjs');
+const { getDb } = require('../lib/db');
+const { verifyToken } = require('../lib/auth');
 
-// Helper to check if user is admin
-function isAdmin(request) {
-  const user = verifyToken(request);
+function isAdmin(req) {
+  const user = verifyToken(req.headers['authorization']);
   return user && user.role === 'admin';
 }
 
-export async function GET(request) {
-  if (!isAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  
+router.get('/users', (req, res) => {
+  if (!isAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
+
   const db = getDb();
   try {
     const users = db.prepare(`
@@ -21,30 +21,29 @@ export async function GET(request) {
       LEFT JOIN students s ON u.id = s.user_id
       ORDER BY u.role, u.name
     `).all();
-    return NextResponse.json({ users });
+    return res.json({ users });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    return res.status(500).json({ error: 'Database error' });
   }
-}
+});
 
-export async function POST(request) {
-  if (!isAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+router.post('/users', async (req, res) => {
+  if (!isAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
 
   const db = getDb();
   try {
-    const { name, email, password, role, department, roll_no, year, semester, section } = await request.json();
+    const { name, email, password, role, department, roll_no, year, semester, section } = req.body;
     if (!name || !email || !password || !role) {
-      return NextResponse.json({ error: 'Name, email, password and role are required' }, { status: 400 });
+      return res.status(400).json({ error: 'Name, email, password and role are required' });
     }
 
     const e = email.toLowerCase().trim();
     if (db.prepare('SELECT id FROM users WHERE email=?').get(e)) {
-      return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
+      return res.status(409).json({ error: 'Email already registered' });
     }
 
     const hash = await bcrypt.hash(password, 10);
-
     let newUserId;
     db.transaction(() => {
       const ur = db.prepare('INSERT INTO users(email,password,name,role,department) VALUES(?,?,?,?,?)').run(
@@ -65,34 +64,32 @@ export async function POST(request) {
       }
     })();
 
-    return NextResponse.json({ message: 'User created successfully', userId: newUserId }, { status: 201 });
+    return res.status(201).json({ message: 'User created successfully', userId: newUserId });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: err.message || 'Failed to create user' }, { status: 500 });
+    return res.status(500).json({ error: err.message || 'Failed to create user' });
   }
-}
+});
 
-export async function DELETE(request) {
-  if (!isAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+router.delete('/users', (req, res) => {
+  if (!isAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
 
   const db = getDb();
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('id');
-    if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+    const userId = req.query.id;
+    if (!userId) return res.status(400).json({ error: 'User ID required' });
 
     db.transaction(() => {
-      // Delete from student table first if exists
       db.prepare('DELETE FROM students WHERE user_id = ?').run(userId);
-      // Delete from notifications
       db.prepare('DELETE FROM notifications WHERE user_id = ?').run(userId);
-      // Delete from users
       db.prepare('DELETE FROM users WHERE id = ?').run(userId);
     })();
 
-    return NextResponse.json({ message: 'User deleted successfully' });
+    return res.json({ message: 'User deleted successfully' });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+    return res.status(500).json({ error: 'Failed to delete user' });
   }
-}
+});
+
+module.exports = router;

@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const params = useSearchParams();
   const [form, setForm] = useState({ email: '', password: '' });
@@ -21,6 +21,7 @@ export default function LoginPage() {
       redirectByRole(u.role);
     }
   }, []);
+
 
   const redirectByRole = (role) => {
     if (role === 'student') router.push('/dashboard');
@@ -331,3 +332,12 @@ export default function LoginPage() {
     </>
   );
 }
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ background: '#07111f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+

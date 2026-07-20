@@ -1,4 +1,4 @@
-# 🏛️ Lendi Portal (v2.1)
+# 🏛️ Lendi Portal (v2.2)
 
 Welcome to the official repository of the **Lendi Portal**, a modern, high-performance, and feature-rich Web Application designed for **Lendi Institute of Engineering and Technology**. 
 
@@ -23,68 +23,40 @@ Tailored interfaces with appropriate permissions and controls for:
 *   **🎫 Gate Security (Staff)**: Scan and verify the QR codes of approved student/faculty outpasses to record exit/entry.
 *   **⚙️ Administrators**: Manage users, modify accounts, and assign roles.
 
-### 3. Verification & Notifications
-*   **QR Code Generation**: Dynamically generates scannable QR codes for fully approved outpasses.
-*   **Gate Scanning**: Security staff scan the QR code to check status and log student exit/entry events.
-*   **Real-time Notification Logs**: Users receive automated notifications for actions taken on their requests (e.g., *Approved by Teacher*, *Rejected by HOD*, *Final Approval by Principal*).
-
 ---
 
 ## 🛠️ Technology Stack
 
-*   **Core Framework**: [Next.js (v16)](https://nextjs.org/) (utilizing the App Router architecture)
-*   **UI / Frontend**: React 19, HTML5, and Vanilla CSS with custom dark glassmorphic styling optimized for response speed and smooth transitions.
-*   **Database**: SQLite managed via [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3) for high performance and lightweight, file-based persistence.
-*   **Authentication**: JSON Web Token (JWT) securely stored client-side in local storage.
-*   **Security**: Password encryption using `bcryptjs`.
+*   **Frontend**: Next.js 16 (App Router), React 19, HTML5, Vanilla CSS dark glassmorphic styling.
+*   **Backend**: Node.js & Express API server.
+*   **Database**: SQLite via `better-sqlite3` with automated schema initialization & demo seeding.
+*   **Authentication**: JSON Web Tokens (JWT) & `bcryptjs` password hashing.
 *   **QR System**: `qrcode` package for generating high-resolution verification codes.
 
 ---
 
-## 📂 Project Structure
+## 📂 Project Structure (Separated Frontend & Backend)
 
 ```text
 lendi-v2/
-├── public/                 # Static assets (images, logos, etc.)
-├── src/
-│   ├── app/                # Next.js App Router Pages & API Routes
-│   │   ├── admin/          # Admin Dashboard & User Management
-│   │   ├── api/            # Route Handlers (Auth, Outpass, Notifications, Attendance)
-│   │   │   ├── admin/
-│   │   │   ├── attendance/
-│   │   │   ├── auth/
-│   │   │   ├── hod/
-│   │   │   ├── notifications/
-│   │   │   ├── outpass/
-│   │   │   └── teacher/
-│   │   ├── attendance/     # Student Attendance views
-│   │   ├── dashboard/      # Student Dashboard
-│   │   ├── hod/            # HOD Dashboard & Monitor Pages
-│   │   ├── login/          # Interactive Login Page (with Quick Demo credentials)
-│   │   ├── notifications/  # Notification center
-│   │   ├── outpass/        # Student Outpass Request Form & Viewer
-│   │   ├── principal/      # Principal Dashboard & Overview
-│   │   ├── register/       # Student Registration form
-│   │   ├── staff/          # Gate/Staff Dashboard
-│   │   ├── teacher/        # Class Teacher Dashboard & Monitor Pages
-│   │   ├── globals.css     # Global styles & HSL-color tokens
-│   │   └── layout.js       # Main HTML envelope
-│   ├── components/
-│   │   └── Sidebar.js      # Responsive sidebar navigation for different roles
-│   └── lib/
-│       ├── auth.js         # JWT signing & validation middleware
-│       └── db.js           # Database initialization and WAL mode setup
-├── lendi.db                # SQLite Database file
-├── next.config.mjs         # Next.js compiler settings
-├── package.json            # Application dependencies and run scripts
-└── jsconfig.json           # Path aliasing config (e.g. "@/*")
+├── backend/                  # Express Node.js Backend API Server
+│   ├── lib/                  # Auth middleware & Database initialization
+│   ├── routes/               # API Routers (Auth, Outpass, Teacher, HOD, Attendance, Staff, Admin)
+│   ├── lendi.db              # SQLite Database file
+│   ├── package.json          # Backend dependencies
+│   └── server.js             # Express application entry (Port 5000)
+├── frontend/                 # Next.js Frontend Client Application
+│   ├── public/               # Static web assets
+│   ├── src/                  # Next.js App Router UI Pages & Components
+│   ├── next.config.mjs       # Next.js compiler settings & API proxy rewrite
+│   └── package.json          # Frontend dependencies
+├── package.json              # Workspace runner scripts
+└── README.md                 # Documentation
 ```
 
 ---
 
 ## 🔑 Demo Access Credentials
-
-For quick evaluation, the application provides built-in demo credentials on the login screen:
 
 | Role | Demo Email | Password | Icon |
 | :--- | :--- | :--- | :---: |
@@ -92,6 +64,7 @@ For quick evaluation, the application provides built-in demo credentials on the 
 | **Teacher** | `teacher.cse@lendi.edu.in` | `password123` | 👨‍🏫 |
 | **HOD** | `hod.cse@lendi.edu.in` | `password123` | 🏛️ |
 | **Principal** | `principal@lendi.edu.in` | `password123` | 🎖️ |
+| **Gate Staff** | `gate.security@lendi.edu.in` | `password123` | 🎫 |
 | **Admin** | `admin@lendi.edu.in` | `admin123` | ⚙️ |
 
 ---
@@ -99,38 +72,28 @@ For quick evaluation, the application provides built-in demo credentials on the 
 ## ⚡ Getting Started
 
 ### Prerequisites
-*   Node.js (version 18 or higher)
-*   npm (installed with Node)
+*   Node.js (v18 or higher)
+*   npm
 
-### Installation
+### Running the Application
 
-1. Clone the repository:
+1. **Start the Backend Server**:
    ```bash
-   git clone https://github.com/Udaykiran252/lendi.git
-   cd lendi-v2
-   ```
-
-2. Install dependencies:
-   ```bash
+   cd backend
    npm install
-   ```
-
-3. Run the development server:
-   ```bash
    npm run dev
+   # Runs on http://localhost:5000
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
+2. **Start the Frontend Client**:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   # Runs on http://localhost:3000
+   ```
 
----
-
-## 🛡️ Database Schema
-
-The system persists data in `lendi.db` with the following main tables:
-*   `users`: Stores general account details, department, roles, and hashed credentials.
-*   `students`: Contains student-specific metadata (roll number, year, semester, section).
-*   `outpasses`: Manages request parameters (reason, destination, date/time) and approval statuses for each tier.
-*   `notifications`: Stores status updates to alert users of approval updates.
+3. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 

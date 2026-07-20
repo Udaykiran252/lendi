@@ -1,16 +1,17 @@
-import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
-import { verifyToken } from '@/lib/auth';
+const express = require('express');
+const router = express.Router();
+const { getDb } = require('../lib/db');
+const { verifyToken } = require('../lib/auth');
 
-export async function GET(request) {
-  const user = verifyToken(request);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!['class_teacher','hod','principal'].includes(user.role))
-    return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+router.get('/', (req, res) => {
+  const user = verifyToken(req.headers['authorization']);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  if (!['class_teacher', 'hod', 'principal'].includes(user.role)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
 
   const db = getDb();
-  const { searchParams } = new URL(request.url);
-  const filter = searchParams.get('filter') || 'pending';
+  const filter = req.query.filter || 'pending';
 
   let query = `
     SELECT o.*, u.name as student_name, u.email as student_email, u.role as applicant_role, u.department,
@@ -26,13 +27,11 @@ export async function GET(request) {
     else if (filter === 'approved') query += ` AND o.teacher_status = 'approved'`;
     else if (filter === 'rejected') query += ` AND o.teacher_status = 'rejected'`;
   } else if (user.role === 'hod') {
-    // HOD only sees requests that were APPROVED by the teacher
     query += ` WHERE LOWER(TRIM(u.department)) = LOWER(TRIM('${user.department}')) AND o.teacher_status = 'approved'`;
     if (filter === 'pending') query += ` AND o.hod_status = 'pending'`;
     else if (filter === 'approved') query += ` AND o.hod_status = 'approved'`;
     else if (filter === 'rejected') query += ` AND o.hod_status = 'rejected'`;
   } else if (user.role === 'principal') {
-    // Principal only sees requests that were APPROVED by both Teacher AND HOD
     query += ` WHERE (o.teacher_status = 'approved' AND o.hod_status = 'approved')`;
     if (filter === 'pending') query += ` AND o.status = 'pending_principal'`;
     else if (filter === 'approved') query += ` AND o.status = 'approved'`;
@@ -42,7 +41,6 @@ export async function GET(request) {
   query += ` ORDER BY o.created_at DESC`;
   const outpasses = db.prepare(query).all();
 
-  // Also get all students for monitoring
   let students = [];
   if (user.role === 'class_teacher' || user.role === 'hod') {
     students = db.prepare(`
@@ -59,5 +57,7 @@ export async function GET(request) {
     `).all();
   }
 
-  return NextResponse.json({ outpasses, students });
-}
+  return res.json({ outpasses, students });
+});
+
+module.exports = router;
