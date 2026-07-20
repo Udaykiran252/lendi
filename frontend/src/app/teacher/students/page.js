@@ -28,33 +28,33 @@ export default function TeacherStudentsPage() {
     <>
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:#07111f;color:#fff}
+        body{font-family:'Inter','Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:#f8fafc;color:#0d2340}
         .root{display:flex;min-height:100vh}
-        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto}
-        .page-title{font-size:1.5rem;font-weight:800;margin-bottom:.3rem}
-        .page-sub{font-size:13.5px;color:rgba(255,255,255,.42);margin-bottom:1.5rem}
+        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc}
+        .page-title{font-size:1.5rem;font-weight:800;margin-bottom:.3rem;color:#0d2340}
+        .page-sub{font-size:13.5px;color:#64748b;margin-bottom:1.5rem}
         .toolbar{display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap}
         .search-box{position:relative;flex:1;max-width:360px}
-        .search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.3);pointer-events:none;line-height:0}
-        .search-inp{width:100%;height:42px;padding:0 14px 0 40px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.11);border-radius:10px;color:#fff;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .2s}
-        .search-inp::placeholder{color:rgba(255,255,255,.25)}
-        .search-inp:focus{border-color:rgba(255,200,60,.5)}
-        .count{font-size:13px;color:rgba(255,255,255,.38);display:flex;align-items:center}
+        .search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#64748b;pointer-events:none;line-height:0}
+        .search-inp{width:100%;height:42px;padding:0 14px 0 40px;background:#ffffff;border:1px solid #cbd5e1;border-radius:10px;color:#0d2340;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .2s;font-weight:500}
+        .search-inp::placeholder{color:#94a3b8}
+        .search-inp:focus{border-color:#0d2340;background:#ffffff}
+        .count{font-size:13px;color:#64748b;display:flex;align-items:center;font-weight:600}
 
         table{width:100%;border-collapse:collapse}
-        thead th{padding:10px 14px;text-align:left;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.02)}
-        tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s;cursor:default}
-        tbody tr:hover{background:rgba(255,255,255,.04)}
-        tbody td{padding:11px 14px;font-size:13.5px;color:rgba(255,255,255,.75)}
+        thead th{padding:10px 14px;text-align:left;font-size:11.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #e2e8f0;background:#f8fafc}
+        tbody tr{border-bottom:1px solid #f1f5f9;transition:background .15s;cursor:default}
+        tbody tr:hover{background:#f8fafc}
+        tbody td{padding:11px 14px;font-size:13.5px;color:#334155}
 
-        .av{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,rgba(96,165,250,.2),rgba(96,165,250,.07));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#60a5fa}
+        .av{width:32px;height:32px;border-radius:9px;background:#0d2340;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#ffffff}
         .name-cell{display:flex;align-items:center;gap:10px}
-        .name-txt{font-weight:700;color:rgba(255,255,255,.88)}
-        .email-txt{font-size:11.5px;color:rgba(255,255,255,.35);margin-top:1px}
+        .name-txt{font-weight:800;color:#0d2340}
+        .email-txt{font-size:11.5px;color:#64748b;margin-top:1px}
         .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
 
-        .tbl-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden}
-        .skel{background:rgba(255,255,255,.06);border-radius:8px;animation:sh 1.5s infinite;margin-bottom:8px}
+        .tbl-wrap{background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
+        .skel{background:#f1f5f9;border-radius:8px;animation:sh 1.5s infinite;margin-bottom:8px}
         @keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
         @media(max-width:768px){.main{padding:1.2rem;padding-bottom:80px}.tbl-wrap{overflow-x:auto}}
       `}</style>

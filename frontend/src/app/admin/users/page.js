@@ -135,58 +135,58 @@ export default function AdminUsersPage() {
     <>
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:#07111f;color:#fff}
+        body{font-family:'Inter','Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:#f8fafc;color:#0d2340}
         .root{display:flex;min-height:100vh}
-        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto}
-        .page-title{font-size:1.5rem;font-weight:800;margin-bottom:.3rem;display:flex;align-items:center;justify-content:space-between}
-        .page-sub{font-size:13.5px;color:rgba(255,255,255,.42);margin-bottom:1.5rem}
+        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc}
+        .page-title{font-size:1.5rem;font-weight:800;margin-bottom:.3rem;display:flex;align-items:center;justify-content:space-between;color:#0d2340}
+        .page-sub{font-size:13.5px;color:#64748b;margin-bottom:1.5rem}
 
         .toolbar{display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
         .sb-box{position:relative;flex:1;max-width:320px}
-        .sb-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.3);pointer-events:none;line-height:0}
-        .sb-inp{width:100%;height:42px;padding:0 14px 0 40px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.11);border-radius:10px;color:#fff;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .2s}
-        .sb-inp:focus{border-color:rgba(248,113,113,.5)}
-        .fb{padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
-        .fb.on{background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3)}
-        .fb.off{background:rgba(255,255,255,.05);color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.08)}
-        .fb.off:hover{background:rgba(255,255,255,.09);color:#fff}
+        .sb-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#64748b;pointer-events:none;line-height:0}
+        .sb-inp{width:100%;height:42px;padding:0 14px 0 40px;background:#ffffff;border:1px solid #cbd5e1;border-radius:10px;color:#0d2340;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .2s;font-weight:500}
+        .sb-inp:focus{border-color:#0d2340;background:#ffffff}
+        .fb{padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+        .fb.on{background:#0d2340;color:#ffffff;box-shadow:0 2px 8px rgba(13,35,64,.15)}
+        .fb.off{background:#ffffff;color:#64748b;border:1px solid #e2e8f0}
+        .fb.off:hover{background:#f1f5f9;color:#0d2340}
         
-        .add-btn{padding:8px 16px;background:linear-gradient(135deg,rgba(248,113,113,.2),rgba(248,113,113,.1));border:1px solid rgba(248,113,113,.3);border-radius:10px;color:#f87171;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
-        .add-btn:hover{background:rgba(248,113,113,.2)}
+        .add-btn{padding:8px 16px;background:#0d2340;border:none;border-radius:10px;color:#ffffff;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .2s;box-shadow:0 4px 12px rgba(13,35,64,.15)}
+        .add-btn:hover{background:#d9232d}
 
-        .tbl-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden}
+        .tbl-wrap{background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
         table{width:100%;border-collapse:collapse}
-        thead th{padding:10px 14px;text-align:left;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.02)}
-        tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s}
-        tbody tr:hover{background:rgba(255,255,255,.04)}
-        tbody td{padding:11px 14px;font-size:13.5px;color:rgba(255,255,255,.75)}
-        .av{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+        thead th{padding:10px 14px;text-align:left;font-size:11.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #e2e8f0;background:#f8fafc}
+        tbody tr{border-bottom:1px solid #f1f5f9;transition:background .15s}
+        tbody tr:hover{background:#f8fafc}
+        tbody td{padding:11px 14px;font-size:13.5px;color:#334155}
+        .av{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:#0d2340!important;color:#ffffff!important}
         .nc{display:flex;align-items:center;gap:10px}
-        .nm{font-weight:700;color:rgba(255,255,255,.88)}
-        .em{font-size:11.5px;color:rgba(255,255,255,.35);margin-top:1px}
+        .nm{font-weight:800;color:#0d2340}
+        .em{font-size:11.5px;color:#64748b;margin-top:1px}
         .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase}
         
-        .del-btn{background:none;border:none;color:#f87171;cursor:pointer;padding:6px;border-radius:6px;font-weight:600;font-size:12px;transition:all .2s}
-        .del-btn:hover{background:rgba(248,113,113,.1)}
+        .del-btn{background:none;border:none;color:#dc2626;cursor:pointer;padding:6px;border-radius:6px;font-weight:700;font-size:12px;transition:all .2s}
+        .del-btn:hover{background:#fee2e2}
 
         /* Form Modal */
-        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:150}
-        .modal{background:#0e1a2f;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:2rem;width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
-        .modal-t{font-size:1.3rem;font-weight:800;margin-bottom:1.2rem;color:#fff}
+        .modal-overlay{position:fixed;inset:0;background:rgba(13,35,64,.4);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:150}
+        .modal{background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;padding:2rem;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,0.15)}
+        .modal-t{font-size:1.3rem;font-weight:800;margin-bottom:1.2rem;color:#0d2340}
         .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
         .field{display:flex;flex-direction:column;gap:5px;margin-bottom:1rem}
         .field.full{grid-column:1 / -1}
-        .label{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase}
-        .inp, .sel{width:100%;height:44px;padding:0 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:9px;color:#fff;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .2s}
-        .inp:focus, .sel:focus{border-color:rgba(248,113,113,.5)}
+        .label{font-size:11.5px;font-weight:700;color:#0d2340;text-transform:uppercase}
+        .inp, .sel{width:100%;height:44px;padding:0 12px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:9px;color:#0d2340;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .2s;font-weight:500}
+        .inp:focus, .sel:focus{border-color:#0d2340;background:#ffffff}
         .modal-btns{display:flex;justify-content:flex-end;gap:10px;margin-top:1rem}
-        .btn-c{height:44px;padding:0 18px;background:none;border:1px solid rgba(255,255,255,.1);border-radius:9px;color:rgba(255,255,255,.6);font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit}
-        .btn-s{height:44px;padding:0 22px;background:linear-gradient(135deg,#e11d48,#f43f5e);border:none;border-radius:9px;color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(244,63,94,.3)}
+        .btn-c{height:44px;padding:0 18px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:9px;color:#475569;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit}
+        .btn-s{height:44px;padding:0 22px;background:#0d2340;border:none;border-radius:9px;color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(13,35,64,.2)}
         .btn-s:disabled{opacity:.5}
 
-        .toast{position:fixed;bottom:2rem;right:2rem;z-index:200;background:#0d2240;border:1px solid rgba(248,113,113,.3);border-radius:12px;padding:13px 18px;font-size:13.5px;font-weight:600;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.4);animation:si .3s ease}
+        .toast{position:fixed;bottom:2rem;right:2rem;z-index:200;background:#0d2340;border:1px solid #1e293b;border-radius:12px;padding:13px 18px;font-size:13.5px;font-weight:600;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.2);animation:si .3s ease}
         @keyframes si{from{transform:translateX(30px);opacity:0}to{transform:translateX(0);opacity:1}}
-        .skel{background:rgba(255,255,255,.06);border-radius:8px;animation:sh 1.5s infinite;margin-bottom:8px}
+        .skel{background:#f1f5f9;border-radius:8px;animation:sh 1.5s infinite;margin-bottom:8px}
         @media(max-width:768px){.main{padding:1.2rem;padding-bottom:80px}.tbl-wrap{overflow-x:auto}}
       `}</style>
       <div className="root">

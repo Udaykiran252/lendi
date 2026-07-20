@@ -20,8 +20,8 @@ export default function AttendancePage() {
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '100vh',
-      background: '#07111f',
-      color: 'rgba(255,255,255,0.6)',
+      background: '#f8fafc',
+      color: '#64748b',
       fontSize: '14px'
     }}>
       Redirecting to dashboard...

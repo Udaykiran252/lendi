@@ -62,85 +62,87 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
       <style>{`
         .sb{
           width:${collapsed?'68px':'240px'};min-height:100vh;
-          background:rgba(255,255,255,0.035);
-          border-right:1px solid rgba(255,255,255,0.07);
+          background:#ffffff;
+          border-right:1px solid #e2e8f0;
           display:flex;flex-direction:column;
           transition:width .3s cubic-bezier(.4,0,.2,1);
           flex-shrink:0;position:sticky;top:0;height:100vh;overflow:hidden;
+          box-shadow:2px 0 10px rgba(0,0,0,0.02);
         }
         .sb-head{
           padding:${collapsed?'18px 16px':'18px 18px'};
-          border-bottom:1px solid rgba(255,255,255,0.06);
+          border-bottom:1px solid #f1f5f9;
           display:flex;align-items:center;gap:10px;min-height:68px;
         }
         .sb-logo{
           width:34px;height:34px;border-radius:10px;flex-shrink:0;
-          background:linear-gradient(135deg,rgba(255,200,60,.2),rgba(255,200,60,.07));
-          border:1px solid rgba(255,200,60,.28);
+          background:#0d2340;
+          border:1px solid #0d2340;
           display:flex;align-items:center;justify-content:center;
         }
         .sb-brand{overflow:hidden;transition:all .25s;opacity:${collapsed?0:1};width:${collapsed?'0':'auto'};white-space:nowrap}
-        .sb-name{font-size:13px;font-weight:800;color:#fff}
+        .sb-name{font-size:14px;font-weight:800;color:#0d2340}
         .sb-role{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
-        .sb-toggle{margin-left:auto;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.3);padding:4px;display:flex;align-items:center;flex-shrink:0;transition:color .2s}
-        .sb-toggle:hover{color:rgba(255,255,255,.7)}
-        .sb-nav{flex:1;padding:14px 8px;display:flex;flex-direction:column;gap:3px;overflow-y:auto}
+        .sb-toggle{margin-left:auto;background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;display:flex;align-items:center;flex-shrink:0;transition:color .2s}
+        .sb-toggle:hover{color:#0d2340}
+        .sb-nav{flex:1;padding:14px 8px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
         .nav-item{
           display:flex;align-items:center;gap:10px;
           padding:${collapsed?'10px':'10px 11px'};
           border-radius:10px;text-decoration:none;
-          color:rgba(255,255,255,.5);font-size:13.5px;font-weight:600;
+          color:#475569;font-size:13.5px;font-weight:600;
           transition:all .2s;white-space:nowrap;position:relative;
           justify-content:${collapsed?'center':'flex-start'};
         }
-        .nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
-        .nav-item.active{background:rgba(255,200,60,.11);color:#ffc83c;border:1px solid rgba(255,200,60,.18)}
+        .nav-item:hover{background:#f8fafc;color:#0d2340}
+        .nav-item.active{background:rgba(245,158,11,0.12);color:#0d2340;border:1px solid rgba(245,158,11,0.3);font-weight:700}
         .nav-ico{font-size:17px;flex-shrink:0}
         .nav-lbl{opacity:${collapsed?0:1};width:${collapsed?'0':'auto'};overflow:hidden;transition:all .25s}
         .nav-badge{
-          margin-left:auto;background:#f87171;color:#fff;
+          margin-left:auto;background:#ef4444;color:#fff;
           font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;
           display:${collapsed?'none':'inline-flex'};flex-shrink:0;
         }
         .nav-dot{
           position:absolute;top:7px;right:7px;width:7px;height:7px;
-          background:#f87171;border-radius:50%;
+          background:#ef4444;border-radius:50%;
           display:${collapsed?'block':'none'};
         }
-        .sb-footer{padding:10px 8px;border-top:1px solid rgba(255,255,255,.06)}
+        .sb-footer{padding:10px 8px;border-top:1px solid #f1f5f9}
         .user-box{
           display:flex;align-items:center;gap:10px;
           padding:${collapsed?'8px':'10px 11px'};border-radius:10px;
-          background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+          background:#f8fafc;border:1px solid #e2e8f0;
           margin-bottom:7px;justify-content:${collapsed?'center':'flex-start'};
         }
         .user-av{
           width:30px;height:30px;border-radius:9px;flex-shrink:0;
-          background:linear-gradient(135deg,#ffc83c,#e8a400);
-          color:#07111f;display:flex;align-items:center;justify-content:center;
+          background:linear-gradient(135deg,#0d2340,#1e293b);
+          color:#ffffff;display:flex;align-items:center;justify-content:center;
           font-size:11px;font-weight:800;
         }
         .user-info{overflow:hidden;transition:all .25s;opacity:${collapsed?0:1};width:${collapsed?'0':'auto'}}
-        .user-nm{font-size:12px;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+        .user-nm{font-size:12px;font-weight:700;color:#0d2340;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
         .user-rl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
         .logout-btn{
           width:100%;display:flex;align-items:center;gap:10px;
           justify-content:${collapsed?'center':'flex-start'};
           padding:${collapsed?'9px':'9px 11px'};
           background:none;border:none;border-radius:10px;
-          color:rgba(255,255,255,.35);font-size:13px;font-weight:600;
+          color:#64748b;font-size:13px;font-weight:600;
           cursor:pointer;font-family:inherit;transition:all .2s;
         }
-        .logout-btn:hover{background:rgba(248,113,113,.1);color:#fca5a5}
+        .logout-btn:hover{background:#fee2e2;color:#dc2626}
         .logout-lbl{opacity:${collapsed?0:1};width:${collapsed?'0':'auto'};overflow:hidden;transition:all .25s;white-space:nowrap}
         /* Mobile */
-        .mob-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(7,17,31,.97);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.08);padding:6px 0;z-index:100}
+        .mob-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);backdrop-filter:blur(20px);border-top:1px solid #e2e8f0;padding:6px 0;z-index:100}
         .mob-nav{display:flex;justify-content:space-around}
-        .mob-item{display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:rgba(255,255,255,.4);padding:6px 10px;border-radius:8px;transition:color .2s;font-size:10px;font-weight:600;position:relative}
-        .mob-item.active{color:#ffc83c}
-        .mob-dot{position:absolute;top:4px;right:6px;width:6px;height:6px;background:#f87171;border-radius:50%}
+        .mob-item{display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:#64748b;padding:6px 10px;border-radius:8px;transition:color .2s;font-size:10px;font-weight:600;position:relative}
+        .mob-item.active{color:#f59e0b;font-weight:700}
+        .mob-dot{position:absolute;top:4px;right:6px;width:6px;height:6px;background:#ef4444;border-radius:50%}
         @media(max-width:768px){.sb{display:none}.mob-bar{display:block}}
       `}</style>
+
 
       <aside className="sb">
         <div className="sb-head">

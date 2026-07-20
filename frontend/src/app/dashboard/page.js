@@ -54,63 +54,64 @@ export default function Dashboard() {
     <>
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:#07111f;color:#fff}
+        body{font-family:'Inter','Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:#f8fafc;color:#0d2340}
         .root{display:flex;min-height:100vh}
-        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:linear-gradient(180deg,rgba(10,22,45,.4) 0%,#07111f 100%)}
+        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc}
 
         .topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2rem;flex-wrap:wrap;gap:1rem}
-        .greet{font-size:1.55rem;font-weight:800;letter-spacing:-.4px}
-        .greet span{color:#ffc83c}
-        .greet-sub{font-size:13.5px;color:rgba(255,255,255,.42);margin-top:3px}
+        .greet{font-size:1.55rem;font-weight:800;letter-spacing:-.4px;color:#0d2340}
+        .greet span{color:#d9232d}
+        .greet-sub{font-size:13.5px;color:#64748b;margin-top:3px;font-weight:500}
         .top-right{display:flex;align-items:center;gap:10px}
-        .date-chip{padding:8px 15px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);font-size:12.5px;color:rgba(255,255,255,.5)}
-        .notif-btn{width:40px;height:40px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:10px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);text-decoration:none;position:relative;transition:all .2s}
-        .notif-btn:hover{background:rgba(255,255,255,.09);color:#fff}
-        .nbadge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:#f87171;color:#fff;font-size:10px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}
+        .date-chip{padding:8px 15px;border-radius:10px;background:#ffffff;border:1px solid #e2e8f0;font-size:12.5px;color:#0d2340;font-weight:600;box-shadow:0 2px 5px rgba(0,0,0,0.02)}
+        .notif-btn{width:40px;height:40px;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#475569;text-decoration:none;position:relative;transition:all .2s;box-shadow:0 2px 5px rgba(0,0,0,0.02)}
+        .notif-btn:hover{background:#f1f5f9;color:#0d2340}
+        .nbadge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}
 
         .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:2rem}
-        .sc{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1.3rem;transition:all .2s;text-decoration:none;display:block}
-        .sc:hover{border-color:rgba(255,200,60,.2);transform:translateY(-2px)}
+        .sc{background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:1.3rem;transition:all .2s;text-decoration:none;display:block;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
+        .sc:hover{border-color:#f59e0b;transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.06)}
         .sc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.8rem}
         .sc-ico{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px}
-        .sc-val{font-size:1.9rem;font-weight:800;color:#fff;line-height:1;margin-bottom:3px}
-        .sc-lbl{font-size:12.5px;color:rgba(255,255,255,.42)}
+        .sc-val{font-size:1.9rem;font-weight:800;color:#0d2340;line-height:1;margin-bottom:3px}
+        .sc-lbl{font-size:12.5px;color:#64748b;font-weight:500}
         .tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
 
         .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
-        .panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden}
-        .ph{display:flex;justify-content:space-between;align-items:center;padding:1.1rem 1.4rem;border-bottom:1px solid rgba(255,255,255,.06)}
-        .pt{font-size:14px;font-weight:700;color:rgba(255,255,255,.85)}
-        .pl{font-size:12.5px;color:#ffc83c;text-decoration:none;font-weight:700}
+        .panel{background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
+        .ph{display:flex;justify-content:space-between;align-items:center;padding:1.1rem 1.4rem;border-bottom:1px solid #f1f5f9;background:#ffffff}
+        .pt{font-size:14px;font-weight:800;color:#0d2340}
+        .pl{font-size:12.5px;color:#d9232d;text-decoration:none;font-weight:700}
         .pl:hover{text-decoration:underline}
         .pb{padding:1.1rem 1.4rem}
 
-        .op-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+        .op-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f1f5f9}
         .op-row:last-child{border-bottom:none}
         .op-ico{font-size:22px;flex-shrink:0}
         .op-info{flex:1}
-        .op-reason{font-size:13px;font-weight:700;color:rgba(255,255,255,.82)}
-        .op-dest{font-size:11.5px;color:rgba(255,255,255,.38);margin-top:2px}
+        .op-reason{font-size:13px;font-weight:700;color:#0d2340}
+        .op-dest{font-size:11.5px;color:#64748b;margin-top:2px}
         .op-badge{font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;white-space:nowrap}
 
-        .notif-row{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+        .notif-row{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f1f5f9}
         .notif-row:last-child{border-bottom:none}
         .nd{width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0}
-        .nm{font-size:13px;color:rgba(255,255,255,.7);line-height:1.5}
-        .nm.unread{color:#fff;font-weight:600}
-        .nt{font-size:11px;color:rgba(255,255,255,.3);margin-top:3px}
+        .nm{font-size:13px;color:#475569;line-height:1.5}
+        .nm.unread{color:#0d2340;font-weight:700}
+        .nt{font-size:11px;color:#94a3b8;margin-top:3px}
 
-        .empty{text-align:center;padding:2rem;color:rgba(255,255,255,.3);font-size:13px}
+        .empty{text-align:center;padding:2rem;color:#94a3b8;font-size:13px}
         .empty-ico{font-size:32px;margin-bottom:.5rem}
-        .skel{background:rgba(255,255,255,.06);border-radius:8px;animation:sh 1.5s infinite}
+        .skel{background:#f1f5f9;border-radius:8px;animation:sh 1.5s infinite}
         @keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
 
-        .apply-btn{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:8px 16px;background:rgba(255,200,60,.12);border:1px solid rgba(255,200,60,.28);color:#ffc83c;font-size:13px;font-weight:700;text-decoration:none;border-radius:9px;transition:background .2s}
-        .apply-btn:hover{background:rgba(255,200,60,.2)}
+        .apply-btn{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:8px 16px;background:#0d2340;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none;border-radius:9px;transition:all .2s;box-shadow:0 4px 10px rgba(13,35,64,0.15)}
+        .apply-btn:hover{background:#d9232d}
 
         @media(max-width:1100px){.stats{grid-template-columns:1fr 1fr}}
         @media(max-width:768px){.main{padding:1.2rem;padding-bottom:80px}.stats{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
       `}</style>
+
 
       <div className="root">
         <Sidebar unreadCount={unread} />
