@@ -86,9 +86,34 @@ function initDb(database) {
       FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
       FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS authorized_emails (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      roll_no TEXT UNIQUE,
+      name TEXT NOT NULL,
+      department TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   try { database.exec(`ALTER TABLE notifications ADD COLUMN outpass_id INTEGER`); } catch {}
+
+  // Seed Authorized Emails
+  const authCount = database.prepare('SELECT COUNT(*) as count FROM authorized_emails').get()?.count || 0;
+  if (authCount === 0) {
+    const insertAuth = database.prepare('INSERT OR IGNORE INTO authorized_emails (email, roll_no, name, department) VALUES (?, ?, ?, ?)');
+    insertAuth.run('rahul.kumar@lendi.edu.in', '21KD1A0501', 'Rahul Kumar', 'CSE');
+    insertAuth.run('priya.sharma@lendi.edu.in', '21KD1A0502', 'Priya Sharma', 'CSE');
+    insertAuth.run('arun.reddy@lendi.edu.in', '21KD1A0401', 'Arun Reddy', 'ECE');
+    insertAuth.run('sneha.patel@lendi.edu.in', '21KD1A0201', 'Sneha Patel', 'EEE');
+    insertAuth.run('vikram.naidu@lendi.edu.in', '21KD1A0301', 'Vikram Naidu', 'MECH');
+    insertAuth.run('teacher.cse@lendi.edu.in', null, 'Dr. Ramesh Babu', 'CSE');
+    insertAuth.run('hod.cse@lendi.edu.in', null, 'Dr. Srinivasa Rao', 'CSE');
+    insertAuth.run('principal@lendi.edu.in', null, 'Dr. V. V. Nageswara Rao', 'ADMIN');
+    insertAuth.run('gate.security@lendi.edu.in', null, 'Main Gate Security', 'SECURITY');
+    insertAuth.run('admin@lendi.edu.in', null, 'System Admin', 'ADMIN');
+  }
 
   const userCount = database.prepare('SELECT COUNT(*) as count FROM users').get()?.count || 0;
   if (userCount === 0) {
@@ -127,6 +152,7 @@ function initDb(database) {
     insertUser.run('System Admin', 'admin@lendi.edu.in', adminHash, 'admin', null);
     insertUser.run('Main Gate Security', 'gate.security@lendi.edu.in', pwdHash, 'gate_staff', null);
   }
+
 }
 
 function getDb() {
