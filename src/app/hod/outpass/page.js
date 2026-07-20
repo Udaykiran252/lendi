@@ -99,10 +99,11 @@ export default function HodOutpassPage() {
       if (res.ok) {
         if (action === 'approve') {
           setSuccessId(id);
-          showToast('✅ Request has been passed to the Principal.');
+          showToast('✅ Request approved and sent to Principal.');
         } else {
           showToast('❌ Outpass rejected.');
         }
+        setSelected(null);
         setRemarks('');
         load('pending');
       } else {

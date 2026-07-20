@@ -21,11 +21,56 @@ export default function OutpassPage() {
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
   const [form, setForm] = useState({ reason:'', destination:'', from_date:'', to_date:'', from_time:'', to_time:'' });
-  const [qrModal, setQrModal] = useState(null); // { qrUrl, outpass }
+  const [qrModal, setQrModal] = useState(null); // { qrUrl, outpass, ... }
 
-  const showToast = (msg,type='ok') => { setToast({msg,type}); setTimeout(()=>setToast(''),3500); };
+  const showToast = (msg, type='ok') => { setToast({msg,type}); setTimeout(()=>setToast(''),3500); };
 
-  const load = async () => {
+  const generateQR = useCallback(async (op) => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const sName = op.student_name || user.name || 'Student';
+    const rNo = op.roll_no || user.student?.roll_no || 'N/A';
+    const dept = op.department || user.department || 'N/A';
+    const yrSem = op.year ? `Yr ${op.year} · Sec ${op.section || 'A'}` : '';
+
+    const qrData = [
+      `════════════════════════════════`,
+      `  LENDI INSTITUTE OF TECH OUTPASS`,
+      `════════════════════════════════`,
+      `Outpass ID  : #${op.id}`,
+      `Student Name: ${sName}`,
+      `Roll Number : ${rNo}`,
+      `Department  : ${dept} ${yrSem ? `(${yrSem})` : ''}`,
+      `────────────────────────────────`,
+      `Destination : ${op.destination}`,
+      `Reason      : ${op.reason}`,
+      `From        : ${op.from_date} ${op.from_time || ''}`,
+      `To          : ${op.to_date} ${op.to_time || ''}`,
+      `────────────────────────────────`,
+      `Status      : ✅ FULLY APPROVED`,
+      `Approved By : Teacher ✓ | HOD ✓ | Principal ✓`,
+      `Approved On : ${op.principal_action_at ? new Date(op.principal_action_at).toLocaleString('en-IN') : new Date().toLocaleString('en-IN')}`,
+      `════════════════════════════════`,
+    ].join('\n');
+
+    try {
+      const qrUrl = await QRCode.toDataURL(qrData, {
+        width: 340, margin: 2,
+        color: { dark: '#07111f', light: '#ffffff' },
+        errorCorrectionLevel: 'M',
+      });
+      setQrModal({
+        qrUrl,
+        outpass: op,
+        studentName: sName,
+        rollNo: rNo,
+        department: dept,
+        year: op.year,
+        section: op.section
+      });
+    } catch (err) { console.error('QR generation failed:', err); }
+  }, []);
+
+  const load = useCallback(async () => {
     const token = localStorage.getItem('token');
     const res = await fetch('/api/outpass', { headers: { Authorization: `Bearer ${token}` } });
     if (res.ok) {
@@ -42,43 +87,13 @@ export default function OutpassPage() {
       }
     }
     setLoading(false);
-  };
+  }, [generateQR]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
     load();
-  }, []);
-
-  const generateQR = useCallback(async (op) => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const qrData = [
-      `══════════════════════════`,
-      `  LENDI COLLEGE OUTPASS`,
-      `══════════════════════════`,
-      `Outpass ID  : #${op.id}`,
-      `Student     : ${user.name || 'N/A'}`,
-      `Roll No     : ${user.student?.roll_no || 'N/A'}`,
-      `Department  : ${user.department || 'N/A'}`,
-      `──────────────────────────`,
-      `Destination : ${op.destination}`,
-      `Reason      : ${op.reason}`,
-      `From        : ${op.from_date} ${op.from_time || ''}`,
-      `To          : ${op.to_date} ${op.to_time || ''}`,
-      `──────────────────────────`,
-      `Status      : ✅ APPROVED`,
-      `Approved On : ${op.hod_action_at ? new Date(op.hod_action_at).toLocaleString('en-IN') : 'N/A'}`,
-      `══════════════════════════`,
-    ].join('\n');
-    try {
-      const qrUrl = await QRCode.toDataURL(qrData, {
-        width: 320, margin: 2,
-        color: { dark: '#07111f', light: '#ffffff' },
-        errorCorrectionLevel: 'M',
-      });
-      setQrModal({ qrUrl, outpass: op, studentName: user.name, rollNo: user.student?.roll_no, department: user.department });
-    } catch (err) { console.error('QR generation failed:', err); }
-  }, []);
+  }, [load, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -88,11 +103,7 @@ export default function OutpassPage() {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/outpass', { method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify(form) });
       let data = {};
-      try {
-        data = await res.json();
-      } catch (err) {
-        console.error('Failed to parse JSON response:', err);
-      }
+      try { data = await res.json(); } catch {}
       if (res.ok) {
         showToast('✅ Outpass submitted! Your teacher will review it shortly.','ok');
         setShowForm(false); setForm({ reason:'', destination:'', from_date:'', to_date:'', from_time:'', to_time:'' });
@@ -132,7 +143,7 @@ export default function OutpassPage() {
         .op-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px 18px;transition:border-color .2s}
         .op-card:hover{border-color:rgba(255,255,255,.14)}
         .op-card.approved{border-left:3px solid #4ade80}
-        .op-card.pending_teacher,.op-card.pending_hod{border-left:3px solid #fbbf24}
+        .op-card.pending_teacher,.op-card.pending_hod,.op-card.pending_principal{border-left:3px solid #fbbf24}
         .op-card.rejected{border-left:3px solid #f87171}
 
         .op-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:8px}
@@ -188,20 +199,20 @@ export default function OutpassPage() {
         .toast{position:fixed;bottom:2rem;right:2rem;z-index:200;background:#0d2240;border:1px solid rgba(255,200,60,.3);border-radius:12px;padding:13px 18px;font-size:13.5px;font-weight:600;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.4);animation:si .3s ease}
         @keyframes si{from{transform:translateX(30px);opacity:0}to{transform:translateX(0);opacity:1}}
 
-        .qr-btn{margin-top:10px;display:inline-flex;align-items:center;gap:7px;padding:9px 16px;background:linear-gradient(135deg,rgba(74,222,128,.18),rgba(74,222,128,.08));border:1px solid rgba(74,222,128,.32);border-radius:10px;color:#4ade80;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
-        .qr-btn:hover{background:linear-gradient(135deg,rgba(74,222,128,.28),rgba(74,222,128,.14));transform:translateY(-1px)}
+        .qr-btn{margin-top:12px;display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:linear-gradient(135deg,rgba(74,222,128,.2),rgba(74,222,128,.1));border:1px solid rgba(74,222,128,.4);border-radius:11px;color:#4ade80;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;box-shadow:0 4px 14px rgba(74,222,128,.15)}
+        .qr-btn:hover{background:linear-gradient(135deg,rgba(74,222,128,.3),rgba(74,222,128,.15));transform:translateY(-1px);box-shadow:0 6px 20px rgba(74,222,128,.25)}
         .qr-backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:1rem;animation:fadeIn .25s ease}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        .qr-modal{background:linear-gradient(170deg,#0e2240 0%,#0a1628 100%);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:2rem;width:100%;max-width:400px;box-shadow:0 40px 80px rgba(0,0,0,.6);text-align:center;animation:scaleIn .3s ease}
+        .qr-modal{background:linear-gradient(170deg,#0e2240 0%,#0a1628 100%);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:2rem;width:100%;max-width:420px;box-shadow:0 40px 80px rgba(0,0,0,.6);text-align:center;animation:scaleIn .3s ease}
         @keyframes scaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
         .qr-header{font-size:18px;font-weight:800;color:#fff;margin-bottom:4px}
         .qr-sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:1.5rem}
         .qr-frame{display:inline-block;padding:16px;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.3);margin-bottom:1.2rem}
-        .qr-frame img{display:block;width:280px;height:280px}
-        .qr-info{display:flex;flex-direction:column;gap:6px;text-align:left;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin-bottom:1.2rem}
+        .qr-frame img{display:block;width:260px;height:260px}
+        .qr-info{display:flex;flex-direction:column;gap:7px;text-align:left;padding:14px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;margin-bottom:1.2rem}
         .qr-row{display:flex;justify-content:space-between;font-size:12.5px}
         .qr-lbl{color:rgba(255,255,255,.4);font-weight:600}
-        .qr-val{color:rgba(255,255,255,.85);font-weight:700;text-align:right;max-width:55%}
+        .qr-val{color:rgba(255,255,255,.88);font-weight:700;text-align:right;max-width:60%}
         .qr-actions{display:flex;gap:10px}
         .qr-download{flex:1;height:44px;background:linear-gradient(135deg,#d4940a,#ffc83c);border:none;border-radius:11px;color:#07111f;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s}
         .qr-download:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,200,60,.25)}
@@ -260,7 +271,7 @@ export default function OutpassPage() {
                         {lbl:'Teacher', done:op.teacher_status==='approved'||isApproved, rej:op.teacher_status==='rejected'||isRejected},
                         {lbl:'HOD', done:op.hod_status==='approved'||isApproved, rej:op.hod_status==='rejected'},
                         {lbl:'Principal', done:op.principal_status==='approved'||isApproved, rej:op.principal_status==='rejected'},
-                        {lbl:'Done', done:isApproved, rej:isRejected},
+                        {lbl:'Approved', done:isApproved, rej:isRejected},
                       ].map((step,i,arr)=>(
                         <div key={i} style={{display:'flex',alignItems:'center',flex:1}}>
                           <div className="step-item">
@@ -276,8 +287,8 @@ export default function OutpassPage() {
                     {/* QR Button for approved outpasses */}
                     {isApproved && (
                       <button className="qr-btn" onClick={(e) => { e.stopPropagation(); generateQR(op); }}>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="10" y="10" width="4" height="4" rx=".5" stroke="currentColor" strokeWidth="1.2"/></svg>
-                        Show Gate Pass QR
+                        <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="10" y="10" width="4" height="4" rx=".5" stroke="currentColor" strokeWidth="1.2"/></svg>
+                        🎫 Show Gate Pass QR
                       </button>
                     )}
                   </div>
@@ -331,13 +342,14 @@ export default function OutpassPage() {
             </div>
             <div className="qr-info">
               {[
-                ['Student', qrModal.studentName || 'N/A'],
-                ['Roll No', qrModal.rollNo || 'N/A'],
-                ['Department', qrModal.department || 'N/A'],
+                ['Outpass ID', `#${qrModal.outpass.id}`],
+                ['Student Name', qrModal.studentName],
+                ['Roll Number', qrModal.rollNo],
+                ['Department', `${qrModal.department}${qrModal.year ? ` (Yr ${qrModal.year})` : ''}`],
                 ['Destination', qrModal.outpass.destination],
                 ['Date', `${qrModal.outpass.from_date}${qrModal.outpass.to_date !== qrModal.outpass.from_date ? ` → ${qrModal.outpass.to_date}` : ''}`],
                 ['Time', `${qrModal.outpass.from_time || '—'} – ${qrModal.outpass.to_time || '—'}`],
-                ['Status', '✅ Fully Approved'],
+                ['Approval Status', '✅ Teacher ✓ | HOD ✓ | Principal ✓'],
               ].map(([k, v]) => (
                 <div key={k} className="qr-row"><span className="qr-lbl">{k}</span><span className="qr-val">{v}</span></div>
               ))}

@@ -95,8 +95,9 @@ export default function PrincipalOutpassPage() {
       body: JSON.stringify({ action, remarks }),
     });
     if (res.ok) {
-      showToast(action === 'approve' ? '✅ Outpass fully approved! User notified.' : '❌ Outpass rejected.');
-      setSelected(null); setRemarks('');
+      showToast(action === 'approve' ? '✅ Outpass fully approved! Gate Pass QR generated.' : '❌ Outpass rejected.');
+      setSelected(null);
+      setRemarks('');
       load('pending');
     } else {
       const d = await res.json(); showToast('❌ ' + d.error);

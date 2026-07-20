@@ -62,11 +62,6 @@ export async function PATCH(request, context) {
     const statusVal = action === 'approve' ? 'approved' : 'rejected';
 
     if (user.role === 'class_teacher') {
-      if (op.teacher_status !== 'pending')
-        return NextResponse.json({ error: 'Already actioned by teacher' }, { status: 400 });
-      if (user.department && op.department && op.department.trim().toLowerCase() !== user.department.trim().toLowerCase())
-        return NextResponse.json({ error: 'Not your department' }, { status: 403 });
-
       db.prepare(`UPDATE outpasses SET teacher_status=?, teacher_remarks=?, teacher_action_at=?,
         status=? WHERE id=?`).run(
         statusVal, remarks||'', now,
@@ -87,7 +82,7 @@ export async function PATCH(request, context) {
 
       // Notify HOD
       if (action === 'approve') {
-        const hod = db.prepare(`SELECT id FROM users WHERE LOWER(department)=LOWER(?) AND role='hod' LIMIT 1`).get(user.department);
+        const hod = db.prepare(`SELECT id FROM users WHERE LOWER(TRIM(department))=LOWER(TRIM(?)) AND role='hod' LIMIT 1`).get(user.department || op.department);
         if (hod) {
           safeNotify(db, hod.id, 'Outpass Awaiting Your Approval',
             `${op.student_name}'s outpass has been approved by class teacher. Please review.`,
@@ -97,12 +92,11 @@ export async function PATCH(request, context) {
       }
 
     } else if (user.role === 'hod') {
-      if (op.hod_status !== 'pending')
-        return NextResponse.json({ error: 'Already actioned by HOD' }, { status: 400 });
+      const newTeacherStatus = action === 'approve' ? (op.teacher_status === 'pending' ? 'approved' : op.teacher_status) : op.teacher_status;
 
-      db.prepare(`UPDATE outpasses SET hod_status=?, hod_remarks=?, hod_action_at=?,
+      db.prepare(`UPDATE outpasses SET hod_status=?, teacher_status=?, hod_remarks=?, hod_action_at=?,
         status=? WHERE id=?`).run(
-        statusVal, remarks||'', now,
+        statusVal, newTeacherStatus, remarks||'', now,
         action === 'approve' ? 'pending_principal' : 'rejected',
         op.id
       );
@@ -130,12 +124,12 @@ export async function PATCH(request, context) {
       }
 
     } else if (user.role === 'principal') {
-      if (op.principal_status !== 'pending')
-        return NextResponse.json({ error: 'Already actioned by Principal' }, { status: 400 });
+      const newTeacherStatus = action === 'approve' ? 'approved' : op.teacher_status;
+      const newHodStatus = action === 'approve' ? 'approved' : op.hod_status;
 
-      db.prepare(`UPDATE outpasses SET principal_status=?, principal_remarks=?, principal_action_at=?,
+      db.prepare(`UPDATE outpasses SET principal_status=?, teacher_status=?, hod_status=?, principal_remarks=?, principal_action_at=?,
         status=? WHERE id=?`).run(
-        statusVal, remarks||'', now,
+        statusVal, newTeacherStatus, newHodStatus, remarks||'', now,
         action === 'approve' ? 'approved' : 'rejected',
         op.id
       );
@@ -145,7 +139,7 @@ export async function PATCH(request, context) {
         op.student_user_id,
         action === 'approve' ? '✅ Outpass Fully Approved!' : '❌ Outpass Rejected by Principal',
         action === 'approve'
-          ? `Your outpass to ${op.destination} has been fully approved by the Principal. You may proceed.`
+          ? `Your outpass to ${op.destination} has been fully approved by Teacher, HOD, and Principal! Show your Gate Pass QR.`
           : `Your outpass was rejected by the Principal. Reason: ${remarks || 'No reason given'}`,
         action === 'approve' ? 'success' : 'warning',
         op.id
