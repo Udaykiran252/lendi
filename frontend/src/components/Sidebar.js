@@ -33,6 +33,11 @@ const NAV_ADMIN = [
   { href: '/notifications', label: 'Notifications', ico: '🔔', badge: true },
 ];
 
+const NAV_SECURITY = [
+  { href: '/security/dashboard', label: 'Gate Security', ico: '🛡️' },
+  { href: '/notifications', label: 'Notifications', ico: '🔔', badge: true },
+];
+
 export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -51,11 +56,11 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
   };
 
   const role = user?.role || 'student';
-  const nav = role === 'admin' ? NAV_ADMIN : role === 'principal' ? NAV_PRINCIPAL : role === 'class_teacher' ? NAV_TEACHER : role === 'hod' ? NAV_HOD : NAV_STUDENT;
+  const nav = role === 'admin' ? NAV_ADMIN : role === 'principal' ? NAV_PRINCIPAL : role === 'class_teacher' ? NAV_TEACHER : role === 'hod' ? NAV_HOD : ['security', 'gate_staff'].includes(role) ? NAV_SECURITY : NAV_STUDENT;
   const initials = user?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'ST';
 
-  const roleLabel = { student: 'Student', class_teacher: 'Class Teacher', hod: 'HOD', principal: 'Principal', admin: 'Admin' }[role] || role;
-  const roleColor = { student: '#60a5fa', class_teacher: '#4ade80', hod: '#fbbf24', principal: '#a78bfa', admin: '#f87171' }[role] || '#60a5fa';
+  const roleLabel = { student: 'Student', class_teacher: 'Class Teacher', hod: 'HOD', principal: 'Principal', admin: 'Admin', security: 'Security Guard', gate_staff: 'Security Guard' }[role] || role;
+  const roleColor = { student: '#60a5fa', class_teacher: '#4ade80', hod: '#fbbf24', principal: '#a78bfa', admin: '#f87171', security: '#2563eb', gate_staff: '#2563eb' }[role] || '#60a5fa';
 
   return (
     <>

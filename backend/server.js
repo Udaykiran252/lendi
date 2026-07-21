@@ -11,6 +11,7 @@ const attendanceRoutes = require('./routes/attendance');
 const notificationRoutes = require('./routes/notifications');
 const staffRoutes = require('./routes/staff');
 const adminRoutes = require('./routes/admin');
+const securityRoutes = require('./routes/security');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,6 +28,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/security', securityRoutes);
 
 // Root status
 app.get('/', (req, res) => {

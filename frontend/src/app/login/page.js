@@ -29,6 +29,7 @@ function LoginContent() {
     else if (role === 'hod') router.push('/hod/dashboard');
     else if (role === 'principal') router.push('/principal/dashboard');
     else if (role === 'admin') router.push('/admin/dashboard');
+    else if (['security', 'gate_staff'].includes(role)) router.push('/security/dashboard');
     else router.push('/dashboard');
   };
 
@@ -58,6 +59,7 @@ function LoginContent() {
     { label: 'Teacher', email: 'teacher.cse@lendi.edu.in', pass: 'password123', icon: '👨‍🏫', color: '#4ade80' },
     { label: 'HOD', email: 'hod.cse@lendi.edu.in', pass: 'password123', icon: '🏛️', color: '#fbbf24' },
     { label: 'Principal', email: 'principal@lendi.edu.in', pass: 'password123', icon: '🎖️', color: '#a78bfa' },
+    { label: 'Security', email: 'gate.security@lendi.edu.in', pass: 'password123', icon: '🛡️', color: '#2563eb' },
     { label: 'Admin', email: 'admin@lendi.edu.in', pass: 'admin123', icon: '⚙️', color: '#f87171' },
   ];
 
@@ -307,7 +309,7 @@ function LoginContent() {
                 </button>
               </form>
 
-              <div className="foot">New student? <Link href="/register" className="lnk">Register here</Link></div>
+             
 
               <div className="demo-title">Quick Demo Login</div>
               <div className="demo-btns">
@@ -319,7 +321,7 @@ function LoginContent() {
                 ))}
               </div>
 
-              <div className="stamp">Lendi College of Engineering &amp; Technology · Est. 1999</div>
+              <div className="stamp">Lendi College of Engineering &amp; Technology · Est. 2008</div>
             </div>
           </main>
         </div>
