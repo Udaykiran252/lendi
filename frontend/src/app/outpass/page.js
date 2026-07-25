@@ -270,7 +270,7 @@ export default function OutpassPage() {
                     <div className="op-steps">
                       {[
                         {lbl:'Submitted', done:true, rej:false},
-                        {lbl:'Teacher', done:op.teacher_status==='approved'||isApproved, rej:op.teacher_status==='rejected'||isRejected},
+                        {lbl:'Teacher', done:op.teacher_status==='approved'||isApproved, rej:op.teacher_status==='rejected'},
                         {lbl:'HOD', done:op.hod_status==='approved'||isApproved, rej:op.hod_status==='rejected'},
                         {lbl:'Principal', done:op.principal_status==='approved'||isApproved, rej:op.principal_status==='rejected'},
                         {lbl:'Approved', done:isApproved, rej:isRejected},

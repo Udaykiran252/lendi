@@ -72,12 +72,13 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
           display:flex;flex-direction:column;
           transition:width .3s cubic-bezier(.4,0,.2,1);
           flex-shrink:0;position:sticky;top:0;height:100vh;overflow:hidden;
+          ${collapsed?'cursor:pointer;':''}
         }
         .sb-head{
-          padding:${collapsed?'16px 14px':'16px 18px'};
+          padding:${collapsed?'16px 0':'16px 18px'};
           border-bottom:1px solid #e2e8f0;
           display:flex;align-items:center;gap:12px;min-height:68px;
-          background:#ffffff;
+          background:#ffffff;justify-content:${collapsed?'center':'flex-start'};
         }
         .sb-logo{
           width:40px;height:40px;flex-shrink:0;
@@ -86,8 +87,8 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
         .sb-brand{overflow:hidden;transition:all .25s;opacity:${collapsed?0:1};width:${collapsed?'0':'auto'};white-space:nowrap}
         .sb-name{font-size:14.5px;font-weight:800;color:#0d2340;letter-spacing:-.3px}
         .sb-role{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
-        .sb-toggle{margin-left:auto;background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;display:flex;align-items:center;flex-shrink:0;transition:all .2s}
-        .sb-toggle:hover{color:#0d2340}
+        .sb-toggle{margin-left:auto;background:none;border:none;cursor:pointer;color:#94a3b8;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;border-radius:8px}
+        .sb-toggle:hover{color:#0d2340;background:#f1f5f9}
         .sb-nav{flex:1;padding:14px 8px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
         .nav-item{
           display:flex;align-items:center;gap:10px;
@@ -147,7 +148,7 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
       `}</style>
 
 
-      <aside className="sb">
+      <aside className="sb" onClick={() => { if (collapsed) setCollapsed(false); }}>
         <div className="sb-head">
           <div className="sb-logo">
             <img 
@@ -163,11 +164,13 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
             <div className="sb-name">Lendi Portal</div>
             <div className="sb-role" style={{ color: roleColor }}>{roleLabel}</div>
           </div>
-          <button className="sb-toggle" onClick={() => setCollapsed(!collapsed)}>
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-              <path d={collapsed ? "M5 3l5 4.5L5 12" : "M10 3L5 7.5l5 4.5"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </button>
+          {!collapsed && (
+            <button className="sb-toggle" onClick={() => setCollapsed(true)}>
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                <path d="M10 3L5 7.5l5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+          )}
         </div>
 
         <nav className="sb-nav">
