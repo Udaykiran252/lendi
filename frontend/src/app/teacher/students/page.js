@@ -8,6 +8,8 @@ export default function TeacherStudentsPage() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filterYear, setFilterYear] = useState('all');
+  const [filterSection, setFilterSection] = useState('all');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -19,10 +21,18 @@ export default function TeacherStudentsPage() {
       .then(r => r.json()).then(d => setStudents(d.students || [])).finally(() => setLoading(false));
   }, [router]);
 
-  const filtered = students.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.roll_no.toLowerCase().includes(search.toLowerCase())
-  );
+  // Get unique values for filter dropdowns
+  const years = [...new Set(students.map(s => s.year).filter(Boolean))].sort();
+  const sections = [...new Set(students.map(s => s.section).filter(Boolean))].sort();
+
+  const filtered = students.filter(s => {
+    const matchSearch = search === '' ||
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.roll_no.toLowerCase().includes(search.toLowerCase());
+    const matchYear = filterYear === 'all' || String(s.year) === String(filterYear);
+    const matchSection = filterSection === 'all' || s.section === filterSection;
+    return matchSearch && matchYear && matchSection;
+  });
 
   return (
     <>
@@ -33,13 +43,17 @@ export default function TeacherStudentsPage() {
         .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc}
         .page-title{font-size:1.5rem;font-weight:800;margin-bottom:.3rem;color:#0d2340}
         .page-sub{font-size:13.5px;color:#64748b;margin-bottom:1.5rem}
-        .toolbar{display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap}
-        .search-box{position:relative;flex:1;max-width:360px}
+        .toolbar{display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+        .search-box{position:relative;flex:1;max-width:320px}
         .search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#64748b;pointer-events:none;line-height:0}
         .search-inp{width:100%;height:42px;padding:0 14px 0 40px;background:#ffffff;border:1px solid #cbd5e1;border-radius:10px;color:#0d2340;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .2s;font-weight:500}
         .search-inp::placeholder{color:#94a3b8}
         .search-inp:focus{border-color:#0d2340;background:#ffffff}
+        .sel{height:42px;padding:0 12px;background:#ffffff;border:1px solid #cbd5e1;border-radius:10px;color:#0d2340;font-size:13px;font-weight:600;outline:none;font-family:inherit;cursor:pointer;transition:border-color .2s;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+        .sel:focus{border-color:#0d2340}
         .count{font-size:13px;color:#64748b;display:flex;align-items:center;font-weight:600}
+        .clear-btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #fca5a5;background:#fff5f5;color:#dc2626;font-family:inherit;transition:all .2s}
+        .clear-btn:hover{background:#fee2e2}
 
         table{width:100%;border-collapse:collapse}
         thead th{padding:10px 14px;text-align:left;font-size:11.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #e2e8f0;background:#f8fafc}
@@ -68,6 +82,17 @@ export default function TeacherStudentsPage() {
               <span className="search-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.3"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg></span>
               <input className="search-inp" placeholder="Search by name or roll number..." value={search} onChange={e=>setSearch(e.target.value)}/>
             </div>
+            <select className="sel" value={filterYear} onChange={e=>setFilterYear(e.target.value)}>
+              <option value="all">All Years</option>
+              {years.map(y=><option key={y} value={y}>Year {y}</option>)}
+            </select>
+            <select className="sel" value={filterSection} onChange={e=>setFilterSection(e.target.value)}>
+              <option value="all">All Sections</option>
+              {sections.map(s=><option key={s} value={s}>Section {s}</option>)}
+            </select>
+            {(filterYear!=='all'||filterSection!=='all'||search) && (
+              <button className="clear-btn" onClick={()=>{setFilterYear('all');setFilterSection('all');setSearch('');}}>✕ Clear</button>
+            )}
             <div className="count">{filtered.length} students</div>
           </div>
           {loading

@@ -63,12 +63,16 @@ function LoginContent() {
     { label: 'Admin', email: 'admin@lendi.edu.in', pass: 'admin123', icon: '⚙️', color: '#f87171' },
   ];
 
+  const scrollToLogin = () => {
+    document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <>
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:'Inter','Plus Jakarta Sans','Segoe UI',system-ui,sans-serif}
-        .page{min-height:100vh;display:flex;background:#f8fafc;position:relative;overflow:hidden}
+        html{scroll-behavior:smooth}
 
         /* Lendi campus background */
         .bg{
@@ -85,60 +89,52 @@ function LoginContent() {
         .glow1{position:fixed;top:-150px;right:-100px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(245,158,11,0.1),transparent 70%);z-index:1;pointer-events:none}
         .glow2{position:fixed;bottom:-200px;left:-100px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(217,35,45,0.08),transparent 70%);z-index:1;pointer-events:none}
 
-        .layout{position:relative;z-index:10;display:flex;width:100%;min-height:100vh}
+        .scroll-container{position:relative;z-index:10}
 
-        /* ── Left brand ── */
-        .brand{
-          width:480px;flex-shrink:0;
-          display:flex;flex-direction:column;justify-content:center;
-          padding:3.5rem 3.5rem;
-          border-right:1px solid #e2e8f0;
-          background:#ffffff;
+        /* ── Hero / Brand Section (Centered) ── */
+        .hero{
+          padding: 4rem 2rem 2rem;
+          display:flex;flex-direction:column;
+          align-items:center;justify-content:center;
+          text-align:center;
         }
 
-        .logo-row{display:flex;align-items:center;gap:14px;margin-bottom:2rem}
-        .logo-img{height:60px;object-fit:contain}
-        .logo-text .ln{font-size:17px;font-weight:800;color:#0d2340;line-height:1.2}
-        .logo-text .ls{font-size:10.5px;color:#d9232d;letter-spacing:1.2px;text-transform:uppercase;margin-top:2px;font-weight:700}
+        .logo-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:1.5rem}
+        .logo-img{height:70px;object-fit:contain}
 
-        .brand-title{font-size:2.1rem;font-weight:800;color:#0d2340;line-height:1.25;letter-spacing:-.5px;margin-bottom:.8rem}
+        .brand-title{font-size:2.6rem;font-weight:800;color:#0d2340;line-height:1.25;letter-spacing:-.5px;margin-bottom:.8rem}
         .brand-title span{color:#d9232d}
-        .brand-desc{font-size:.95rem;color:#475569;line-height:1.75;margin-bottom:2rem}
+        .brand-desc{font-size:1rem;color:#475569;line-height:1.75;margin-bottom:1.5rem;max-width:500px}
 
-        .pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:2rem}
+        .pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:2rem}
         .pill{
           display:inline-flex;align-items:center;gap:6px;
           padding:6px 14px;border-radius:30px;
-          border:1px solid #e2e8f0;background:#f8fafc;
+          border:1px solid #e2e8f0;background:#ffffff;
           font-size:12px;font-weight:700;color:#0d2340;
         }
 
-        .divider{height:1px;background:linear-gradient(90deg,#e2e8f0,transparent);margin-bottom:2rem}
-
-        .stats-row{
-          display:flex;gap:0;
-          background:#f8fafc;border:1px solid #e2e8f0;
-          border-radius:14px;overflow:hidden;margin-bottom:2rem;
+        .scroll-btn{
+          background:#0d2340;border:none;border-radius:14px;
+          color:#ffffff;font-size:15px;font-weight:800;
+          padding:14px 32px;cursor:pointer;
+          display:inline-flex;align-items:center;gap:10px;
+          font-family:inherit;transition:all .25s;
+          box-shadow:0 4px 15px rgba(13,35,64,0.2);
         }
-        .stat{flex:1;text-align:center;padding:1rem 0;border-right:1px solid #e2e8f0}
-        .stat:last-child{border-right:none}
-        .stat-n{font-size:1.7rem;font-weight:800;color:#0d2340;line-height:1}
-        .stat-l{font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-top:3px;font-weight:700}
+        .scroll-btn:hover{background:#d9232d;transform:translateY(-2px);box-shadow:0 6px 20px rgba(217,35,45,0.25)}
 
-        /* Role info */
-        .roles-title{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
-        .role-chips{display:flex;flex-direction:column;gap:8px}
-        .role-chip{
-          display:flex;align-items:center;gap:10px;
-          padding:10px 14px;border-radius:10px;
-          background:#f8fafc;border:1px solid #e2e8f0;
+        .bounce-arrow{
+          animation:bounce 2s infinite;
+          margin-top:1.5rem;color:#94a3b8;cursor:pointer;
         }
-        .role-chip-ico{font-size:18px;flex-shrink:0}
-        .role-chip-name{font-size:13px;font-weight:700;color:#0d2340}
-        .role-chip-desc{font-size:11px;color:#64748b;margin-top:1px}
+        @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
 
-        /* ── Right form ── */
-        .form-side{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}
+        /* ── Login Form Section ── */
+        .login-section{
+          padding: 2rem 2rem 5rem;
+          display:flex;align-items:center;justify-content:center;
+        }
 
         .card{
           width:100%;max-width:430px;
@@ -155,11 +151,11 @@ function LoginContent() {
           background:#ffffff;
           border:1px solid #e2e8f0;
           display:flex;align-items:center;justify-content:center;
-          margin-bottom:1.2rem;padding:4px;
+          margin:0 auto 1.2rem;padding:4px;
           box-shadow:0 2px 8px rgba(0,0,0,0.04);
         }
-        .card-title{font-size:1.55rem;font-weight:800;color:#0d2340;letter-spacing:-.4px;margin-bottom:5px}
-        .card-sub{font-size:13.5px;color:#64748b;margin-bottom:1.8rem}
+        .card-title{font-size:1.55rem;font-weight:800;color:#0d2340;letter-spacing:-.4px;margin-bottom:5px;text-align:center}
+        .card-sub{font-size:13.5px;color:#64748b;margin-bottom:1.8rem;text-align:center}
 
         .alert{display:flex;align-items:center;gap:9px;padding:11px 13px;border-radius:11px;font-size:13px;font-weight:500;margin-bottom:1.2rem}
         .err{background:#fee2e2;border:1px solid #fca5a5;color:#dc2626}
@@ -216,115 +212,103 @@ function LoginContent() {
           text-align:center;font-size:11px;color:#94a3b8;letter-spacing:.4px;
         }
 
-        @media(max-width:900px){.brand{display:none}}
-        @media(max-width:768px){.form-side{padding:1.5rem}.card{padding:2rem 1.5rem}}
+        @media(max-width:768px){
+          .brand-title{font-size:2rem}
+          .brand-desc{font-size:.9rem}
+          .login-section{padding:1.5rem}
+          .card{padding:2rem 1.5rem}
+        }
       `}</style>
 
 
-      <div className="page">
-        <div className="bg"/><div className="bg-dots"/>
-        <div className="glow1"/><div className="glow2"/>
+      <div className="bg"/><div className="bg-dots"/>
+      <div className="glow1"/><div className="glow2"/>
 
-        <div className="layout">
-          {/* Brand */}
-          <aside className="brand">
-            <div className="logo-row">
-              <img src="/lendi-logo-transparent.png" alt="Lendi" className="logo-img" style={{ maxHeight: '55px', objectFit: 'contain' }} onError={e=>e.target.src='/lendi-logo.png'}/>
+      <div className="scroll-container">
+        {/* Hero / Brand Section - First Screen */}
+        <section className="hero">
+          <div className="logo-row">
+            <img src="/lendi-logo-transparent.png" alt="Lendi" className="logo-img" onError={e=>e.target.src='/lendi-logo.png'}/>
+          </div>
+
+          <h1 className="brand-title">Welcome to<br/><span>Lendi Portal</span></h1>
+          <p className="brand-desc">
+            Unified management system for students, teachers, and HODs.<br/>
+            Track attendance, manage outpasses, and stay connected with campus.
+          </p>
+
+          <div className="pills">
+            <span className="pill">🏅 NAAC Accredited</span>
+            <span className="pill">📊 NIRF Ranked</span>
+            <span className="pill">📍 Vizianagaram, AP</span>
+          </div>
+
+          <button className="scroll-btn" onClick={scrollToLogin}>
+            Sign In to Portal
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          </button>
+
+          <div className="bounce-arrow" onClick={scrollToLogin}>
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M8 12l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          </div>
+        </section>
+
+        {/* Login Form Section - Second Screen (on scroll) */}
+        <section className="login-section" id="login-section">
+          <div className="card">
+            <div className="card-ico">
+              <img src="/lendi-crest.png" alt="Lendi Crest" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
+            <div className="card-title">Sign In</div>
+            <div className="card-sub">Access your Lendi College portal</div>
 
-            <h1 className="brand-title">Welcome to<br/><span>Lendi Portal</span></h1>
-            <p className="brand-desc">
-              Unified management system for students, teachers, and HODs.<br/>
-              Track attendance, manage outpasses, and stay connected with campus.
-            </p>
+            {error && <div className="alert err">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.3"/><path d="M7.5 4.5V8M7.5 10v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              {error}
+            </div>}
+            {success && <div className="alert ok">✅ {success}</div>}
 
-            <div className="pills">
-              <span className="pill">🏅 NAAC Accredited</span>
-              <span className="pill">📊 NIRF Ranked</span>
-              <span className="pill">📍 Vizianagaram, AP</span>
-            </div>
-
-            <div className="divider"/>
-
-            <div className="stats-row">
-              <div className="stat"><div className="stat-n">5K+</div><div className="stat-l">Students</div></div>
-              <div className="stat"><div className="stat-n">250+</div><div className="stat-l">Faculty</div></div>
-              <div className="stat"><div className="stat-n">7</div><div className="stat-l">Depts</div></div>
-              <div className="stat"><div className="stat-n">14+</div><div className="stat-l">Years</div></div>
-            </div>
-
-            <div className="roles-title">Portal Access For</div>
-            <div className="role-chips">
-              {[
-                {ico:'🎓',name:'Students',desc:'Attendance, outpass, notifications'},
-                {ico:'👨‍🏫',name:'Class Teachers',desc:'Approve outpasses, monitor students'},
-                {ico:'🏛️',name:'HOD / Principal',desc:'Department overview, final approvals'},
-              ].map(r=>(
-                <div key={r.name} className="role-chip" style={{ border: '1.5px solid #bfdbfe' }}>
-                  <div className="role-chip-ico">{r.ico}</div>
-                  <div><div className="role-chip-name">{r.name}</div><div className="role-chip-desc">{r.desc}</div></div>
+            <form className="form" onSubmit={handleSubmit}>
+              <div className="field">
+                <label className="label">Email Address</label>
+                <div className="ibox">
+                  <span className="iico"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="1.5" y="4" width="14" height="9.5" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M1.5 6.5l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3"/></svg></span>
+                  <input className="inp" type="email" placeholder="yourname@lendi.edu.in"
+                    value={form.email} onChange={e=>setForm({...form,email:e.target.value})} required/>
                 </div>
+              </div>
+              <div className="field">
+                <label className="label">Password</label>
+                <div className="ibox">
+                  <span className="iico"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="3" y="8" width="11" height="7.5" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5.5 8V6.5a3 3 0 016 0V8" stroke="currentColor" strokeWidth="1.3"/></svg></span>
+                  <input className="inp" type={showPass?'text':'password'} placeholder="Enter password"
+                    value={form.password} onChange={e=>setForm({...form,password:e.target.value})} required/>
+                  <button type="button" className="eye" onClick={()=>setShowPass(!showPass)}>
+                    <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M1 8.5S3.5 4 8.5 4s7.5 4.5 7.5 4.5-2.5 4.5-7.5 4.5S1 8.5 1 8.5z" stroke="currentColor" strokeWidth="1.3"/><circle cx="8.5" cy="8.5" r="2.5" stroke="currentColor" strokeWidth="1.3"/>{showPass&&<path d="M2 2l13 13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>}</svg>
+                  </button>
+                </div>
+                <span className="hint">All passwords: <strong>password123</strong></span>
+              </div>
+              <button type="submit" className="btn" disabled={loading}>
+                {loading?<><span className="spin"/>Signing in…</>:'Sign In to Portal'}
+              </button>
+            </form>
+
+           
+
+            <div className="demo-title">Quick Demo Login</div>
+            <div className="demo-btns">
+              {demoAccounts.map(d=>(
+                <button key={d.label} className="demo-btn"
+                  onClick={()=>setForm({email:d.email,password:d.pass})}>
+                  <span>{d.icon}</span><span>{d.label}</span>
+                </button>
               ))}
             </div>
-          </aside>
 
-          {/* Form */}
-          <main className="form-side">
-            <div className="card">
-              <div className="card-ico">
-                <img src="/lendi-crest.png" alt="Lendi Crest" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              </div>
-              <div className="card-title">Sign In</div>
-              <div className="card-sub">Access your Lendi College portal</div>
-
-              {error && <div className="alert err">
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.3"/><path d="M7.5 4.5V8M7.5 10v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                {error}
-              </div>}
-              {success && <div className="alert ok">✅ {success}</div>}
-
-              <form className="form" onSubmit={handleSubmit}>
-                <div className="field">
-                  <label className="label">Email Address</label>
-                  <div className="ibox">
-                    <span className="iico"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="1.5" y="4" width="14" height="9.5" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M1.5 6.5l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3"/></svg></span>
-                    <input className="inp" type="email" placeholder="yourname@lendi.edu.in"
-                      value={form.email} onChange={e=>setForm({...form,email:e.target.value})} required/>
-                  </div>
-                </div>
-                <div className="field">
-                  <label className="label">Password</label>
-                  <div className="ibox">
-                    <span className="iico"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="3" y="8" width="11" height="7.5" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5.5 8V6.5a3 3 0 016 0V8" stroke="currentColor" strokeWidth="1.3"/></svg></span>
-                    <input className="inp" type={showPass?'text':'password'} placeholder="Enter password"
-                      value={form.password} onChange={e=>setForm({...form,password:e.target.value})} required/>
-                    <button type="button" className="eye" onClick={()=>setShowPass(!showPass)}>
-                      <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M1 8.5S3.5 4 8.5 4s7.5 4.5 7.5 4.5-2.5 4.5-7.5 4.5S1 8.5 1 8.5z" stroke="currentColor" strokeWidth="1.3"/><circle cx="8.5" cy="8.5" r="2.5" stroke="currentColor" strokeWidth="1.3"/>{showPass&&<path d="M2 2l13 13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>}</svg>
-                    </button>
-                  </div>
-                  <span className="hint">All passwords: <strong>password123</strong></span>
-                </div>
-                <button type="submit" className="btn" disabled={loading}>
-                  {loading?<><span className="spin"/>Signing in…</>:'Sign In to Portal'}
-                </button>
-              </form>
-
-             
-
-              <div className="demo-title">Quick Demo Login</div>
-              <div className="demo-btns">
-                {demoAccounts.map(d=>(
-                  <button key={d.label} className="demo-btn"
-                    onClick={()=>setForm({email:d.email,password:d.pass})}>
-                    <span>{d.icon}</span><span>{d.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="stamp">Lendi College of Engineering &amp; Technology · Est. 2008</div>
-            </div>
-          </main>
-        </div>
+            <div className="stamp">Lendi College of Engineering &amp; Technology · Est. 2008</div>
+          </div>
+        </section>
       </div>
     </>
   );
@@ -337,4 +321,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-

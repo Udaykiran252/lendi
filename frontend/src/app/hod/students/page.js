@@ -9,6 +9,8 @@ export default function HodStudentsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [filterYear, setFilterYear] = useState('all');
+  const [filterSection, setFilterSection] = useState('all');
   const [notifs, setNotifs] = useState([]);
   const [pendingOutpasses, setPendingOutpasses] = useState(0);
 
@@ -30,13 +32,19 @@ export default function HodStudentsPage() {
 
   const unread = notifs.filter(n=>!n.is_read).length;
 
+  // Get unique values for filter dropdowns
+  const years = [...new Set(students.map(s => s.year).filter(Boolean))].sort();
+  const sections = [...new Set(students.map(s => s.section).filter(Boolean))].sort();
+
   const filtered = students.filter(s => {
-    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.roll_no.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = search === '' || s.name.toLowerCase().includes(search.toLowerCase()) || s.roll_no.toLowerCase().includes(search.toLowerCase());
+    const matchYear = filterYear === 'all' || String(s.year) === String(filterYear);
+    const matchSection = filterSection === 'all' || s.section === filterSection;
     const matchFilter = filterType==='all' ||
                         (filterType==='active' && (s.approved_outpasses||0) > 0) ||
                         (filterType==='frequent' && (s.approved_outpasses||0) >= 2) ||
                         (filterType==='none' && (!s.approved_outpasses || s.approved_outpasses === 0));
-    return matchSearch && matchFilter;
+    return matchSearch && matchYear && matchSection && matchFilter;
   });
 
   return (
@@ -48,17 +56,22 @@ export default function HodStudentsPage() {
         .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc}
         .page-title{font-size:1.5rem;font-weight:800;margin-bottom:.3rem;color:#0d2340}
         .page-sub{font-size:13.5px;color:#64748b;margin-bottom:1.5rem}
-        .toolbar{display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+        .toolbar{display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+        .filter-row{display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
         .sb-box{position:relative;flex:1;max-width:320px}
         .sb-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#64748b;pointer-events:none;line-height:0}
         .sb-inp{width:100%;height:42px;padding:0 14px 0 40px;background:#ffffff;border:1px solid #cbd5e1;border-radius:10px;color:#0d2340;font-size:13.5px;outline:none;font-family:inherit;transition:border-color .2s;font-weight:500}
         .sb-inp::placeholder{color:#94a3b8}
         .sb-inp:focus{border-color:#0d2340;background:#ffffff}
+        .sel{height:42px;padding:0 12px;background:#ffffff;border:1px solid #cbd5e1;border-radius:10px;color:#0d2340;font-size:13px;font-weight:600;outline:none;font-family:inherit;cursor:pointer;transition:border-color .2s;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+        .sel:focus{border-color:#0d2340}
         .fb{padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
         .fb.on{background:#0d2340;color:#ffffff;box-shadow:0 2px 8px rgba(13,35,64,.15)}
         .fb.off{background:#ffffff;color:#64748b;border:1px solid #e2e8f0}
         .fb.off:hover{background:#f1f5f9;color:#0d2340}
         .count{font-size:13px;color:#64748b;margin-left:auto;font-weight:600}
+        .clear-btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #fca5a5;background:#fff5f5;color:#dc2626;font-family:inherit;transition:all .2s}
+        .clear-btn:hover{background:#fee2e2}
 
         .summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
         .sum-card{background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
@@ -103,8 +116,23 @@ export default function HodStudentsPage() {
           <div className="toolbar">
             <div className="sb-box">
               <span className="sb-ico"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.3"/><path d="M10 10l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg></span>
-              <input className="sb-inp" placeholder="Search name or roll no..." value={search} onChange={e=>setSearch(e.target.value)}/>
+              <input className="sb-inp" placeholder="Search by name or roll number..." value={search} onChange={e=>setSearch(e.target.value)}/>
             </div>
+            <select className="sel" value={filterYear} onChange={e=>setFilterYear(e.target.value)}>
+              <option value="all">All Years</option>
+              {years.map(y=><option key={y} value={y}>Year {y}</option>)}
+            </select>
+            <select className="sel" value={filterSection} onChange={e=>setFilterSection(e.target.value)}>
+              <option value="all">All Sections</option>
+              {sections.map(s=><option key={s} value={s}>Section {s}</option>)}
+            </select>
+            {(filterYear!=='all'||filterSection!=='all'||search) && (
+              <button className="clear-btn" onClick={()=>{setFilterYear('all');setFilterSection('all');setSearch('');}}>✕ Clear</button>
+            )}
+            <div className="count">{filtered.length} students</div>
+          </div>
+
+          <div className="filter-row">
             {[
               { id: 'all', label: 'All' },
               { id: 'active', label: 'With Passes' },
@@ -115,7 +143,6 @@ export default function HodStudentsPage() {
                 {f.label}
               </button>
             ))}
-            <div className="count">{filtered.length} students</div>
           </div>
 
           {loading ? [1,2,3,4,5].map(i=><div key={i} className="skel" style={{height:52}}/>)
