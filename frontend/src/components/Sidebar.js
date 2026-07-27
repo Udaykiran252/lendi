@@ -141,8 +141,10 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
         /* Mobile */
         .mob-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);backdrop-filter:blur(20px);border-top:1px solid #e2e8f0;padding:6px 0;z-index:100}
         .mob-nav{display:flex;justify-content:space-around}
-        .mob-item{display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:#64748b;padding:6px 10px;border-radius:8px;transition:color .2s;font-size:10px;font-weight:600;position:relative}
+        .mob-item{display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:#64748b;padding:6px 10px;border-radius:8px;transition:color .2s;font-size:10px;font-weight:600;position:relative;background:none;border:none;cursor:pointer;font-family:inherit}
         .mob-item.active{color:#2563eb;font-weight:700}
+        .mob-logout-btn{color:#ef4444}
+        .mob-logout-btn:hover{color:#dc2626}
         .mob-dot{position:absolute;top:4px;right:6px;width:6px;height:6px;background:#ef4444;border-radius:50%}
         @media(max-width:768px){.sb{display:none}.mob-bar{display:block}}
       `}</style>
@@ -216,6 +218,10 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
               </Link>
             );
           })}
+          <button onClick={logout} className="mob-item mob-logout-btn" title="Sign Out">
+            <span style={{ fontSize: 18 }}>🚪</span>
+            <span>Logout</span>
+          </button>
         </div>
       </nav>
     </>
