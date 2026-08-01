@@ -5,11 +5,11 @@ import Sidebar from '@/components/Sidebar';
 import QRCode from 'qrcode';
 
 const ST = {
-  pending_teacher:   { label:'Awaiting Teacher',   color:'#fbbf24', bg:'rgba(251,191,36,.12)', ico:'⏳', step:1 },
-  pending_hod:       { label:'Awaiting HOD',       color:'#60a5fa', bg:'rgba(96,165,250,.12)',  ico:'📋', step:2 },
-  pending_principal: { label:'Awaiting Principal', color:'#a78bfa', bg:'rgba(167,139,250,.12)', ico:'👑', step:3 },
-  approved:          { label:'Fully Approved',     color:'#4ade80', bg:'rgba(74,222,128,.12)',  ico:'✅', step:4 },
-  rejected:          { label:'Rejected',           color:'#f87171', bg:'rgba(248,113,113,.12)', ico:'❌', step:0 },
+  pending_teacher: { label: 'Awaiting Teacher', color: '#fbbf24', bg: 'rgba(251,191,36,.12)', ico: '⏳', step: 1 },
+  pending_hod: { label: 'Awaiting HOD', color: '#60a5fa', bg: 'rgba(96,165,250,.12)', ico: '📋', step: 2 },
+  pending_principal: { label: 'Awaiting Principal', color: '#a78bfa', bg: 'rgba(167,139,250,.12)', ico: '👑', step: 3 },
+  approved: { label: 'Fully Approved', color: '#4ade80', bg: 'rgba(74,222,128,.12)', ico: '✅', step: 4 },
+  rejected: { label: 'Rejected', color: '#f87171', bg: 'rgba(248,113,113,.12)', ico: '❌', step: 0 },
 };
 
 export default function OutpassPage() {
@@ -20,10 +20,10 @@ export default function OutpassPage() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ reason:'', destination:'', from_date:'', to_date:'', from_time:'', to_time:'' });
+  const [form, setForm] = useState({ reason: '', destination: '', from_date: '', to_date: '', from_time: '', to_time: '' });
   const [qrModal, setQrModal] = useState(null); // { qrUrl, outpass, ... }
 
-  const showToast = (msg, type='ok') => { setToast({msg,type}); setTimeout(()=>setToast(''),3500); };
+  const showToast = (msg, type = 'ok') => { setToast({ msg, type }); setTimeout(() => setToast(''), 3500); };
 
   const generateQR = useCallback(async (op) => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -97,16 +97,16 @@ export default function OutpassPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.reason||!form.destination||!form.from_date||!form.to_date) { setError('Please fill all required fields'); return; }
+    if (!form.reason || !form.destination || !form.from_date || !form.to_date) { setError('Please fill all required fields'); return; }
     setSubmitting(true); setError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/outpass', { method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify(form) });
+      const res = await fetch('/api/outpass', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(form) });
       let data = {};
-      try { data = await res.json(); } catch {}
+      try { data = await res.json(); } catch { }
       if (res.ok) {
-        showToast('✅ Outpass submitted! Your teacher will review it shortly.','ok');
-        setShowForm(false); setForm({ reason:'', destination:'', from_date:'', to_date:'', from_time:'', to_time:'' });
+        showToast('✅ Outpass submitted! Your teacher will review it shortly.', 'ok');
+        setShowForm(false); setForm({ reason: '', destination: '', from_date: '', to_date: '', from_time: '', to_time: '' });
         load();
       } else {
         setError(data.error || 'Submission failed');
@@ -119,7 +119,7 @@ export default function OutpassPage() {
     }
   };
 
-  const stats = { total:outpasses.length, approved:outpasses.filter(o=>o.status==='approved').length, pending:outpasses.filter(o=>o.status?.startsWith('pending')).length, rejected:outpasses.filter(o=>o.status==='rejected').length };
+  const stats = { total: outpasses.length, approved: outpasses.filter(o => o.status === 'approved').length, pending: outpasses.filter(o => o.status?.startsWith('pending')).length, rejected: outpasses.filter(o => o.status === 'rejected').length };
 
   return (
     <>
@@ -229,102 +229,102 @@ export default function OutpassPage() {
         <main className="main">
           <div className="toprow">
             <div><div className="page-title">🚪 My Outpasses</div><div className="page-sub">Apply for outpass and track approval status</div></div>
-            <button className="btn-apply" onClick={()=>{setShowForm(true);setError('')}}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            <button className="btn-apply" onClick={() => { setShowForm(true); setError('') }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
               Apply for Outpass
             </button>
           </div>
 
           <div className="stats">
-            {[{n:stats.total,l:'Total',c:'#fff'},{n:stats.approved,l:'Approved',c:'#4ade80'},{n:stats.pending,l:'Pending',c:'#fbbf24'},{n:stats.rejected,l:'Rejected',c:'#f87171'}].map((s,i)=>(
-              <div key={i} className="sc"><div className="sc-n" style={{color:s.c}}>{s.n}</div><div className="sc-l">{s.l}</div></div>
+            {[{ n: stats.total, l: 'Total', c: '#fff' }, { n: stats.approved, l: 'Approved', c: '#4ade80' }, { n: stats.pending, l: 'Pending', c: '#fbbf24' }, { n: stats.rejected, l: 'Rejected', c: '#f87171' }].map((s, i) => (
+              <div key={i} className="sc"><div className="sc-n" style={{ color: s.c }}>{s.n}</div><div className="sc-l">{s.l}</div></div>
             ))}
           </div>
 
-          {loading ? <div className="op-list">{[1,2,3].map(i=><div key={i} className="skel" style={{height:100}}/>)}</div>
-          : outpasses.length===0 ? (
-            <div className="empty">
-              <div className="empty-ico">🚪</div>
-              <div className="empty-t">No outpasses yet</div>
-              <div className="empty-s">Click "Apply for Outpass" above to submit your first request</div>
-            </div>
-          ) : (
-            <div className="op-list">
-              {outpasses.map(op => {
-                const st = ST[op.status]||{label:op.status,color:'#fff',bg:'rgba(255,255,255,.1)',ico:'📋',step:0};
-                const isApproved = op.status==='approved';
-                const isRejected = op.status==='rejected';
-                return (
-                  <div key={op.id} className={`op-card ${op.status}`}>
-                    <div className="op-head">
-                      <div className="op-reason">{op.reason}</div>
-                      <span className="op-badge" style={{color:st.color,background:st.bg}}>{st.ico} {st.label}</span>
-                    </div>
-                    <div className="op-meta">
-                      <strong>Destination:</strong> {op.destination} &nbsp;·&nbsp;
-                      <strong>Date:</strong> {op.from_date}{op.to_date!==op.from_date?` → ${op.to_date}`:''} &nbsp;·&nbsp;
-                      {op.from_time&&<><strong>Time:</strong> {op.from_time} — {op.to_time} &nbsp;·&nbsp;</>}
-                      <strong>Applied:</strong> {new Date(op.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}
-                    </div>
-                    {/* Approval steps */}
-                    <div className="op-steps">
-                      {[
-                        {lbl:'Submitted', done:true, rej:false},
-                        {lbl:'Teacher', done:op.teacher_status==='approved'||isApproved, rej:op.teacher_status==='rejected'||isRejected},
-                        {lbl:'HOD', done:op.hod_status==='approved'||isApproved, rej:op.hod_status==='rejected'},
-                        {lbl:'Principal', done:op.principal_status==='approved'||isApproved, rej:op.principal_status==='rejected'},
-                        {lbl:'Approved', done:isApproved, rej:isRejected},
-                      ].map((step,i,arr)=>(
-                        <div key={i} style={{display:'flex',alignItems:'center',flex:1}}>
-                          <div className="step-item">
-                            <div className={`step-dot ${step.rej?'rej':step.done?'done':i===st.step?'cur':'todo'}`}>
-                              {step.rej?'✗':step.done?'✓':i+1}
+          {loading ? <div className="op-list">{[1, 2, 3].map(i => <div key={i} className="skel" style={{ height: 100 }} />)}</div>
+            : outpasses.length === 0 ? (
+              <div className="empty">
+                <div className="empty-ico">🚪</div>
+                <div className="empty-t">No outpasses yet</div>
+                <div className="empty-s">Click "Apply for Outpass" above to submit your first request</div>
+              </div>
+            ) : (
+              <div className="op-list">
+                {outpasses.map(op => {
+                  const st = ST[op.status] || { label: op.status, color: '#fff', bg: 'rgba(255,255,255,.1)', ico: '📋', step: 0 };
+                  const isApproved = op.status === 'approved';
+                  const isRejected = op.status === 'rejected';
+                  return (
+                    <div key={op.id} className={`op-card ${op.status}`}>
+                      <div className="op-head">
+                        <div className="op-reason">{op.reason}</div>
+                        <span className="op-badge" style={{ color: st.color, background: st.bg }}>{st.ico} {st.label}</span>
+                      </div>
+                      <div className="op-meta">
+                        <strong>Destination:</strong> {op.destination} &nbsp;·&nbsp;
+                        <strong>Date:</strong> {op.from_date}{op.to_date !== op.from_date ? ` → ${op.to_date}` : ''} &nbsp;·&nbsp;
+                        {op.from_time && <><strong>Time:</strong> {op.from_time} — {op.to_time} &nbsp;·&nbsp;</>}
+                        <strong>Applied:</strong> {new Date(op.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </div>
+                      {/* Approval steps */}
+                      <div className="op-steps">
+                        {[
+                          { lbl: 'Submitted', done: true, rej: false },
+                          { lbl: 'Teacher', done: op.teacher_status === 'approved' || isApproved, rej: op.teacher_status === 'rejected' },
+                          { lbl: 'HOD', done: op.hod_status === 'approved' || isApproved, rej: op.hod_status === 'rejected' },
+                          { lbl: 'Principal', done: op.principal_status === 'approved' || isApproved, rej: op.principal_status === 'rejected' },
+                          { lbl: 'Approved', done: isApproved, rej: isRejected },
+                        ].map((step, i, arr) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                            <div className="step-item">
+                              <div className={`step-dot ${step.rej ? 'rej' : step.done ? 'done' : i === st.step ? 'cur' : 'todo'}`}>
+                                {step.rej ? '✗' : step.done ? '✓' : i + 1}
+                              </div>
+                              <div className="step-lbl">{step.lbl}</div>
                             </div>
-                            <div className="step-lbl">{step.lbl}</div>
+                            {i < arr.length - 1 && <div className={`step-line ${step.done && !step.rej ? 'done' : ''}`} />}
                           </div>
-                          {i<arr.length-1 && <div className={`step-line ${step.done&&!step.rej?'done':''}`}/>}
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                      {/* QR Button for approved outpasses */}
+                      {isApproved && (
+                        <button className="qr-btn" onClick={(e) => { e.stopPropagation(); generateQR(op); }}>
+                          <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2" /><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2" /><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2" /><rect x="10" y="10" width="4" height="4" rx=".5" stroke="currentColor" strokeWidth="1.2" /></svg>
+                          🎫 Show Gate Pass QR
+                        </button>
+                      )}
                     </div>
-                    {/* QR Button for approved outpasses */}
-                    {isApproved && (
-                      <button className="qr-btn" onClick={(e) => { e.stopPropagation(); generateQR(op); }}>
-                        <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="10" y="10" width="4" height="4" rx=".5" stroke="currentColor" strokeWidth="1.2"/></svg>
-                        🎫 Show Gate Pass QR
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
         </main>
       </div>
 
       {showForm && (
-        <div className="backdrop" onClick={e=>{if(e.target===e.currentTarget)setShowForm(false)}}>
+        <div className="backdrop" onClick={e => { if (e.target === e.currentTarget) setShowForm(false) }}>
           <div className="modal">
             <div className="modal-head">
               <div className="modal-title">🚪 Apply for Outpass</div>
-              <button className="close" onClick={()=>setShowForm(false)}>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+              <button className="close" onClick={() => setShowForm(false)}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
               </button>
             </div>
-            {error && <div className="alert-err"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.3"/><path d="M7 4v3M7 9v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>{error}</div>}
+            {error && <div className="alert-err"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.3" /><path d="M7 4v3M7 9v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>{error}</div>}
             <form className="form" onSubmit={handleSubmit}>
-              <div className="field"><label className="lbl">Reason *</label><textarea className="textarea" placeholder="Describe your reason for going out..." value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})} required/></div>
-              <div className="field"><label className="lbl">Destination *</label><input className="inp" type="text" placeholder="Where are you going?" value={form.destination} onChange={e=>setForm({...form,destination:e.target.value})} required/></div>
+              <div className="field"><label className="lbl">Reason *</label><textarea className="textarea" placeholder="Describe your reason for going out..." value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} required /></div>
+              <div className="field"><label className="lbl">Destination *</label><input className="inp" type="text" placeholder="Where are you going?" value={form.destination} onChange={e => setForm({ ...form, destination: e.target.value })} required /></div>
               <div className="two">
-                <div className="field"><label className="lbl">From Date *</label><input className="inp" type="date" value={form.from_date} onChange={e=>setForm({...form,from_date:e.target.value})} required/></div>
-                <div className="field"><label className="lbl">To Date *</label><input className="inp" type="date" value={form.to_date} onChange={e=>setForm({...form,to_date:e.target.value})} required/></div>
+                <div className="field"><label className="lbl">From Date *</label><input className="inp" type="date" value={form.from_date} onChange={e => setForm({ ...form, from_date: e.target.value })} required /></div>
+                <div className="field"><label className="lbl">To Date *</label><input className="inp" type="date" value={form.to_date} onChange={e => setForm({ ...form, to_date: e.target.value })} required /></div>
               </div>
               <div className="two">
-                <div className="field"><label className="lbl">From Time</label><input className="inp" type="time" value={form.from_time} onChange={e=>setForm({...form,from_time:e.target.value})}/></div>
-                <div className="field"><label className="lbl">To Time</label><input className="inp" type="time" value={form.to_time} onChange={e=>setForm({...form,to_time:e.target.value})}/></div>
+                <div className="field"><label className="lbl">From Time</label><input className="inp" type="time" value={form.from_time} onChange={e => setForm({ ...form, from_time: e.target.value })} /></div>
+                <div className="field"><label className="lbl">To Time</label><input className="inp" type="time" value={form.to_time} onChange={e => setForm({ ...form, to_time: e.target.value })} /></div>
               </div>
               <div className="form-btns">
-                <button type="button" className="btn-cancel" onClick={()=>setShowForm(false)}>Cancel</button>
-                <button type="submit" className="btn-submit" disabled={submitting}>{submitting?<><span className="spin"/>Submitting…</>:'Submit Request'}</button>
+                <button type="button" className="btn-cancel" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="submit" className="btn-submit" disabled={submitting}>{submitting ? <><span className="spin" />Submitting…</> : 'Submit Request'}</button>
               </div>
             </form>
           </div>
