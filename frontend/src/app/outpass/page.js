@@ -21,7 +21,7 @@ export default function OutpassPage() {
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
   const [form, setForm] = useState({ reason:'', destination:'', from_date:'', to_date:'', from_time:'', to_time:'' });
-  const [qrModal, setQrModal] = useState(null); // { qrUrl, outpass, ... }
+  const [qrModal, setQrModal] = useState(null);
 
   const showToast = (msg, type='ok') => { setToast({msg,type}); setTimeout(()=>setToast(''),3500); };
 
@@ -31,6 +31,10 @@ export default function OutpassPage() {
     const rNo = op.roll_no || user.student?.roll_no || 'N/A';
     const dept = op.department || user.department || 'N/A';
     const yrSem = op.year ? `Yr ${op.year} · Sec ${op.section || 'A'}` : '';
+
+    const teacherAuth = op.teacher_status === 'bypassed' ? 'Teacher ⚡ (Absent)' : 'Teacher ✓';
+    const hodAuth = op.hod_status === 'bypassed' ? 'HOD ⚡ (Absent)' : 'HOD ✓';
+    const principalAuth = op.principal_status === 'bypassed' ? 'Principal ⚡ (Absent)' : 'Principal ✓';
 
     const qrData = [
       `════════════════════════════════`,
@@ -47,7 +51,7 @@ export default function OutpassPage() {
       `To          : ${op.to_date} ${op.to_time || ''}`,
       `────────────────────────────────`,
       `Status      : ✅ FULLY APPROVED`,
-      `Approved By : Teacher ✓ | HOD ✓ | Principal ✓`,
+      `Approved By : ${teacherAuth} | ${hodAuth} | ${principalAuth}`,
       `Approved On : ${op.principal_action_at ? new Date(op.principal_action_at).toLocaleString('en-IN') : new Date().toLocaleString('en-IN')}`,
       `════════════════════════════════`,
     ].join('\n');
@@ -105,7 +109,7 @@ export default function OutpassPage() {
       let data = {};
       try { data = await res.json(); } catch {}
       if (res.ok) {
-        showToast('✅ Outpass submitted! Your teacher will review it shortly.','ok');
+        showToast('✅ Outpass submitted! Tracking status…','ok');
         setShowForm(false); setForm({ reason:'', destination:'', from_date:'', to_date:'', from_time:'', to_time:'' });
         load();
       } else {
@@ -157,6 +161,7 @@ export default function OutpassPage() {
         .step-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
         .step-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
         .step-dot.done{background:#16a34a;color:#ffffff}
+        .step-dot.bypassed{background:#f59e0b;color:#ffffff}
         .step-dot.cur{background:rgba(245,158,11,.15);border:2px solid #f59e0b;color:#d97706}
         .step-dot.todo{background:#f1f5f9;border:1px solid #cbd5e1;color:#94a3b8}
         .step-dot.rej{background:#fee2e2;border:2px solid #dc2626;color:#dc2626}
@@ -223,7 +228,6 @@ export default function OutpassPage() {
         @media(max-width:768px){.main{padding:1.2rem;padding-bottom:80px}.stats{grid-template-columns:1fr 1fr}.toprow{flex-direction:column}.op-steps{display:none}.qr-frame img{width:220px;height:220px}.qr-modal{padding:1.5rem}}
       `}</style>
 
-
       <div className="root">
         <Sidebar />
         <main className="main">
@@ -236,7 +240,7 @@ export default function OutpassPage() {
           </div>
 
           <div className="stats">
-            {[{n:stats.total,l:'Total',c:'#fff'},{n:stats.approved,l:'Approved',c:'#4ade80'},{n:stats.pending,l:'Pending',c:'#fbbf24'},{n:stats.rejected,l:'Rejected',c:'#f87171'}].map((s,i)=>(
+            {[{n:stats.total,l:'Total',c:'#0d2340'},{n:stats.approved,l:'Approved',c:'#16a34a'},{n:stats.pending,l:'Pending',c:'#d97706'},{n:stats.rejected,l:'Rejected',c:'#dc2626'}].map((s,i)=>(
               <div key={i} className="sc"><div className="sc-n" style={{color:s.c}}>{s.n}</div><div className="sc-l">{s.l}</div></div>
             ))}
           </div>
@@ -254,6 +258,11 @@ export default function OutpassPage() {
                 const st = ST[op.status]||{label:op.status,color:'#fff',bg:'rgba(255,255,255,.1)',ico:'📋',step:0};
                 const isApproved = op.status==='approved';
                 const isRejected = op.status==='rejected';
+
+                const teacherBypassed = op.teacher_status === 'bypassed';
+                const hodBypassed = op.hod_status === 'bypassed';
+                const principalBypassed = op.principal_status === 'bypassed';
+
                 return (
                   <div key={op.id} className={`op-card ${op.status}`}>
                     <div className="op-head">
@@ -266,26 +275,28 @@ export default function OutpassPage() {
                       {op.from_time&&<><strong>Time:</strong> {op.from_time} — {op.to_time} &nbsp;·&nbsp;</>}
                       <strong>Applied:</strong> {new Date(op.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}
                     </div>
+
                     {/* Approval steps */}
                     <div className="op-steps">
                       {[
-                        {lbl:'Submitted', done:true, rej:false},
-                        {lbl:'Teacher', done:op.teacher_status==='approved'||isApproved, rej:op.teacher_status==='rejected'},
-                        {lbl:'HOD', done:op.hod_status==='approved'||isApproved, rej:op.hod_status==='rejected'},
-                        {lbl:'Principal', done:op.principal_status==='approved'||isApproved, rej:op.principal_status==='rejected'},
-                        {lbl:'Approved', done:isApproved, rej:isRejected},
+                        {lbl:'Submitted', done:true, rej:false, bypassed:false},
+                        {lbl: teacherBypassed ? 'Teacher (Absent)' : 'Teacher', done: op.teacher_status==='approved'||teacherBypassed||isApproved, rej:op.teacher_status==='rejected', bypassed:teacherBypassed},
+                        {lbl: hodBypassed ? 'HOD (Absent)' : 'HOD', done: op.hod_status==='approved'||hodBypassed||isApproved, rej:op.hod_status==='rejected', bypassed:hodBypassed},
+                        {lbl: principalBypassed ? 'Principal (Absent)' : 'Principal', done: op.principal_status==='approved'||principalBypassed||isApproved, rej:op.principal_status==='rejected', bypassed:principalBypassed},
+                        {lbl: isRejected ? 'Rejected' : 'Approved', done: isApproved, rej: isRejected, bypassed: false},
                       ].map((step,i,arr)=>(
                         <div key={i} style={{display:'flex',alignItems:'center',flex:1}}>
                           <div className="step-item">
-                            <div className={`step-dot ${step.rej?'rej':step.done?'done':i===st.step?'cur':'todo'}`}>
-                              {step.rej?'✗':step.done?'✓':i+1}
+                            <div className={`step-dot ${step.rej?'rej':step.bypassed?'bypassed':step.done?'done':i===st.step?'cur':'todo'}`} title={step.bypassed ? 'Bypassed due to faculty absence' : ''}>
+                              {step.rej?'✗':step.bypassed?'⚡':step.done?'✓':i+1}
                             </div>
-                            <div className="step-lbl">{step.lbl}</div>
+                            <div className="step-lbl" style={{color: step.bypassed ? '#d97706' : undefined}}>{step.lbl}</div>
                           </div>
                           {i<arr.length-1 && <div className={`step-line ${step.done&&!step.rej?'done':''}`}/>}
                         </div>
                       ))}
                     </div>
+
                     {/* QR Button for approved outpasses */}
                     {isApproved && (
                       <button className="qr-btn" onClick={(e) => { e.stopPropagation(); generateQR(op); }}>
@@ -351,7 +362,7 @@ export default function OutpassPage() {
                 ['Destination', qrModal.outpass.destination],
                 ['Date', `${qrModal.outpass.from_date}${qrModal.outpass.to_date !== qrModal.outpass.from_date ? ` → ${qrModal.outpass.to_date}` : ''}`],
                 ['Time', `${qrModal.outpass.from_time || '—'} – ${qrModal.outpass.to_time || '—'}`],
-                ['Approval Status', '✅ Teacher ✓ | HOD ✓ | Principal ✓'],
+                ['Approval Status', `✅ ${qrModal.outpass.teacher_status==='bypassed'?'Teacher ⚡':'Teacher ✓'} | ${qrModal.outpass.hod_status==='bypassed'?'HOD ⚡':'HOD ✓'} | ${qrModal.outpass.principal_status==='bypassed'?'Principal ⚡':'Principal ✓'}`],
               ].map(([k, v]) => (
                 <div key={k} className="qr-row"><span className="qr-lbl">{k}</span><span className="qr-val">{v}</span></div>
               ))}

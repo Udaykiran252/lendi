@@ -111,7 +111,12 @@ export default function Dashboard() {
         .view-link{display:inline-flex;align-items:center;gap:6px;margin-top:1.5rem;padding:10px 18px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:11px;color:#0d2340;font-size:13px;font-weight:700;text-decoration:none;transition:all .2s}
         .view-link:hover{background:#e2e8f0;border-color:#cbd5e1}
 
-        @media(max-width:768px){.main{padding:1.2rem;padding-bottom:80px}.form-card{padding:1.5rem}.two{grid-template-columns:1fr}}
+        @media(max-width:900px){
+          .root{flex-direction:column;width:100%}
+          .main{padding:1rem 1rem 90px 1rem;max-width:100vw;overflow-x:hidden}
+          .form-card{padding:1.2rem;width:100%}
+          .two{grid-template-columns:1fr}
+        }
       `}</style>
 
 

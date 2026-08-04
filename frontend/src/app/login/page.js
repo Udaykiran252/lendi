@@ -42,8 +42,15 @@ function LoginContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        // Non-JSON response (e.g., HTML/plain text error page)
+      }
+      if (!res.ok) {
+        throw new Error(data.error || `Server error (${res.status}). Please ensure backend server is running.`);
+      }
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       redirectByRole(data.user.role);

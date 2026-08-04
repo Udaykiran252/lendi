@@ -14,7 +14,7 @@ router.get('/', (req, res) => {
   const type = req.query.type || 'students';
 
   if (type === 'students') {
-    const whereClause = user.role === 'principal' ? '' : `WHERE u.department = '${user.department}'`;
+    const whereClause = user.role === 'principal' ? '' : `WHERE LOWER(TRIM(u.department)) = LOWER(TRIM('${user.department}'))`;
     const students = db.prepare(`
       SELECT u.id as user_id, u.name, u.email, u.department,
              s.id as student_id, s.roll_no, s.year, s.semester, s.section,
@@ -57,7 +57,7 @@ router.get('/', (req, res) => {
 
   if (type === 'stats') {
     const dept = user.role === 'principal' ? null : user.department;
-    const deptFilter = dept ? `AND u.department = '${dept}'` : '';
+    const deptFilter = dept ? `AND LOWER(TRIM(u.department)) = LOWER(TRIM('${dept}'))` : '';
 
     const totalStudents = db.prepare(`SELECT COUNT(*) as c FROM users u WHERE u.role='student' ${deptFilter}`).get().c;
     let pendingOutpasses = 0;
@@ -71,13 +71,13 @@ router.get('/', (req, res) => {
         SELECT COUNT(*) as c FROM outpasses o
         JOIN students st ON o.student_id = st.id
         JOIN users u ON st.user_id = u.id
-        WHERE u.department = ? AND o.teacher_status = 'approved' AND o.hod_status = 'pending'
+        WHERE LOWER(TRIM(u.department)) = LOWER(TRIM(?)) AND o.teacher_status IN ('approved', 'bypassed') AND o.hod_status = 'pending'
       `).get(user.department).c;
       approvedToday = db.prepare(`
         SELECT COUNT(*) as c FROM outpasses o
         JOIN students st ON o.student_id = st.id
         JOIN users u ON st.user_id = u.id
-        WHERE u.department = ? AND o.hod_status = 'approved' AND date(o.hod_action_at) = date('now')
+        WHERE LOWER(TRIM(u.department)) = LOWER(TRIM(?)) AND o.hod_status = 'approved' AND date(o.hod_action_at) = date('now')
       `).get(user.department).c;
     }
 

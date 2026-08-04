@@ -98,6 +98,7 @@ function initDb(database) {
   `);
 
   try { database.exec(`ALTER TABLE notifications ADD COLUMN outpass_id INTEGER`); } catch {}
+  try { database.exec(`ALTER TABLE users ADD COLUMN availability_status TEXT DEFAULT 'active'`); } catch {}
 
   // Seed Authorized Emails
   const authCount = database.prepare('SELECT COUNT(*) as count FROM authorized_emails').get()?.count || 0;

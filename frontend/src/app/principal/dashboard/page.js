@@ -52,8 +52,8 @@ export default function PrincipalDashboard() {
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:'Inter','Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:#f8fafc;color:#0d2340}
-        .root{display:flex;min-height:100vh}
-        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc}
+        .root{display:flex;min-height:100vh;width:100%;max-width:100vw;overflow-x:hidden}
+        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc;width:100%;max-width:100vw}
         .topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2rem;flex-wrap:wrap;gap:1rem}
         .title{font-size:1.5rem;font-weight:800;letter-spacing:-.4px;color:#0d2340}
         .title span{color:#d9232d}
@@ -82,17 +82,25 @@ export default function PrincipalDashboard() {
         .op-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f1f5f9}
         .op-row:last-child{border-bottom:none}
         .av{width:36px;height:36px;border-radius:10px;background:#0d2340;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#ffffff;flex-shrink:0}
-        .op-info{flex:1}
+        .op-info{flex:1;word-break:break-word}
         .op-name{font-size:13px;font-weight:700;color:#0d2340}
         .op-meta{font-size:11.5px;color:#64748b;margin-top:2px}
-        .action-link{font-size:12px;color:#0d2340;text-decoration:none;font-weight:700;padding:5px 11px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;transition:all .2s}
+        .action-link{font-size:12px;color:#0d2340;text-decoration:none;font-weight:700;padding:5px 11px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;transition:all .2s;white-space:nowrap}
         .action-link:hover{background:#0d2340;color:#ffffff;border-color:#0d2340}
 
         .empty{text-align:center;padding:2rem;color:#94a3b8;font-size:13px}
         .skel{background:#f1f5f9;border-radius:8px;animation:sh 1.5s infinite}
         @keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
         @media(max-width:1100px){.stats{grid-template-columns:1fr 1fr}}
-        @media(max-width:768px){.main{padding:1.2rem;padding-bottom:80px}}
+        @media(max-width:900px){
+          .root{flex-direction:column;width:100%}
+          .main{padding:1rem 1rem 90px 1rem;max-width:100vw;overflow-x:hidden}
+          .title{font-size:1.3rem}
+          .stats{grid-template-columns:1fr 1fr !important;gap:10px}
+        }
+        @media(max-width:480px){
+          .stats{grid-template-columns:1fr !important}
+        }
       `}</style>
 
       <div className="root">

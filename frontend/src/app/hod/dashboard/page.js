@@ -36,7 +36,7 @@ export default function HodDashboard() {
   }, [router]);
 
   const unread = notifs.filter(n=>!n.is_read).length;
-  const hodPending = outpasses.filter(o => o.teacher_status === 'approved' && o.hod_status === 'pending');
+  const hodPending = outpasses.filter(o => ['approved', 'bypassed'].includes(o.teacher_status) && o.hod_status === 'pending');
 
   const statusMap = {
     pending_teacher:   { label:'Awaiting Teacher',   color:'#fbbf24', bg:'rgba(251,191,36,.12)' },
@@ -70,7 +70,7 @@ export default function HodDashboard() {
         .sc-lbl{font-size:12.5px;color:#64748b;font-weight:500}
         .tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
 
-        .content{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+        .content{display:flex;flex-direction:column;gap:1.5rem}
         .panel{background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
         .ph{display:flex;justify-content:space-between;align-items:center;padding:1.1rem 1.4rem;border-bottom:1px solid #f1f5f9;background:#ffffff}
         .pt{font-size:14px;font-weight:800;color:#0d2340}
@@ -91,7 +91,17 @@ export default function HodDashboard() {
         .skel{background:#f1f5f9;border-radius:8px;animation:sh 1.5s infinite}
         @keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
         @media(max-width:1100px){.stats{grid-template-columns:1fr 1fr}.content{grid-template-columns:1fr}}
-        @media(max-width:768px){.main{padding:1.2rem;padding-bottom:80px}}
+        @media(max-width:768px){
+          .root{flex-direction:column;width:100%}
+          .main{padding:1rem 1rem 90px 1rem;max-width:100vw;overflow-x:hidden}
+          .title{font-size:1.3rem}
+          .stats{grid-template-columns:1fr 1fr;gap:10px}
+          .sc{padding:1rem}
+          .sc-val{font-size:1.6rem}
+        }
+        @media(max-width:480px){
+          .stats{grid-template-columns:1fr}
+        }
       `}</style>
 
       <div className="root">
@@ -127,15 +137,14 @@ export default function HodDashboard() {
           </div>
 
           <div className="content">
-            <div className="panel">
-              <div className="ph">
-                <span className="pt">⏳ Awaiting HOD Approval {hodPending.length>0 && <span style={{background:'#f87171',color:'#fff',fontSize:11,padding:'2px 7px',borderRadius:10,marginLeft:8}}>{hodPending.length}</span>}</span>
-                <Link href="/hod/outpass" className="pl">Review All →</Link>
-              </div>
-              <div className="pb">
-                {loading ? [1,2,3].map(i=><div key={i} className="skel" style={{height:52,marginBottom:8}}/>)
-                : hodPending.length === 0 ? <div className="empty">✅ No pending approvals</div>
-                : hodPending.slice(0,5).map(op=>{
+            {!loading && hodPending.length > 0 && (
+              <div className="panel">
+                <div className="ph">
+                  <span className="pt">⏳ Awaiting HOD Approval <span style={{background:'#f87171',color:'#fff',fontSize:11,padding:'2px 7px',borderRadius:10,marginLeft:8}}>{hodPending.length}</span></span>
+                  <Link href="/hod/outpass" className="pl">Review All →</Link>
+                </div>
+                <div className="pb">
+                  {hodPending.slice(0,5).map(op=>{
                     const initials = op.student_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
                     return (
                       <div key={op.id} className="op-row">
@@ -148,8 +157,9 @@ export default function HodDashboard() {
                       </div>
                     );
                   })}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="panel">
               <div className="ph">

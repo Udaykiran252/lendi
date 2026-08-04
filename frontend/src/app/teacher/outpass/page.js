@@ -3,12 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 
-const STATUS_MAP = {
-  pending:  { label:'Pending',  color:'#fbbf24', bg:'rgba(251,191,36,.12)' },
-  approved: { label:'Approved', color:'#4ade80', bg:'rgba(74,222,128,.12)' },
-  rejected: { label:'Rejected', color:'#f87171', bg:'rgba(248,113,113,.12)' },
-};
-
 export default function TeacherOutpassPage() {
   const router = useRouter();
   const [outpasses, setOutpasses] = useState([]);
@@ -30,16 +24,11 @@ export default function TeacherOutpassPage() {
       const d = await res.json();
       const list = d.outpasses || [];
       setOutpasses(list);
-      // Auto select outpass from URL query if present
       const params = new URLSearchParams(window.location.search);
       const targetId = params.get('id');
       if (targetId) {
         const found = list.find(o => String(o.id) === String(targetId));
-        if (found) {
-          setSelected(found);
-        } else if (f !== 'all') {
-          setFilter('all');
-        }
+        if (found) setSelected(found);
       }
     }
     setLoading(false);
@@ -50,32 +39,35 @@ export default function TeacherOutpassPage() {
     const u = localStorage.getItem('user');
     if (!token) { router.push('/login'); return; }
     const parsed = JSON.parse(u);
-    if (!['class_teacher'].includes(parsed.role)) { router.push('/login'); return; }
+    if (!['class_teacher','hod','principal'].includes(parsed.role)) { router.push('/login'); return; }
     load(filter);
-    // Fetch notifications
     fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } })
       .then(r=>r.ok ? r.json() : {}).then(d=>setNotifs(d.notifications||[]));
-  }, [filter]);
+  }, [filter, load, router]);
 
   const unread = notifs.filter(n=>!n.is_read).length;
 
   const handleAction = async (id, action) => {
+    if (!remarks.trim()) {
+      showToast(action === 'reject' ? '❌ Reason for rejection is required.' : '❌ Reason / remarks is required for Class Teacher approval.');
+      return;
+    }
     setActioning(true);
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(`/api/outpass/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ action, remarks }),
+        body: JSON.stringify({ action, remarks: remarks.trim() }),
       });
       if (res.ok) {
         if (action === 'approve') {
           setSuccessId(id);
-          showToast('✅ Request has been passed to the HOD.');
+          showToast('✅ Outpass approved successfully!');
         } else {
           showToast('❌ Outpass rejected.');
         }
-        setSelected(prev => prev ? { ...prev, teacher_status: action === 'approve' ? 'approved' : 'rejected', teacher_remarks: remarks } : null);
+        setSelected(null);
         setRemarks('');
         load('pending');
       } else {
@@ -90,219 +82,213 @@ export default function TeacherOutpassPage() {
     }
   };
 
+  const displayOutpasses = filter === 'pending'
+    ? outpasses.filter(o => o.teacher_status === 'pending')
+    : filter === 'approved'
+    ? outpasses.filter(o => o.teacher_status === 'approved')
+    : filter === 'rejected'
+    ? outpasses.filter(o => o.teacher_status === 'rejected')
+    : outpasses;
+
+  const selectOutpass = (op) => {
+    setSelected(op);
+    setRemarks('');
+  };
+
+  const statusBadge = (op) => {
+    if (op.teacher_status === 'approved') return { text: '✓ Approved', color: '#16a34a', bg: '#dcfce7' };
+    if (op.teacher_status === 'bypassed') return { text: '⚡ Class Teacher Absent', color: '#f59e0b', bg: '#fef3c7' };
+    if (op.teacher_status === 'rejected') return { text: '✕ Rejected', color: '#dc2626', bg: '#fee2e2' };
+    return { text: '⏳ Pending', color: '#d97706', bg: '#fef3c7' };
+  };
+
   return (
     <>
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:'Inter','Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:#f8fafc;color:#0d2340}
-        .root{display:flex;min-height:100vh}
-        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc}
+        .root{display:flex;min-height:100vh;width:100%;max-width:100vw;overflow-x:hidden}
+        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc;width:100%;max-width:100vw}
         .page-title{font-size:1.5rem;font-weight:800;margin-bottom:.3rem;color:#0d2340}
         .page-sub{font-size:13.5px;color:#64748b;margin-bottom:1.5rem}
-        .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap}
-        .filter-btn{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
-        .filter-btn.on{background:#0d2340;color:#ffffff;box-shadow:0 2px 8px rgba(13,35,64,.15)}
-        .filter-btn.off{background:#ffffff;color:#64748b;border:1px solid #e2e8f0}
-        .filter-btn.off:hover{background:#f1f5f9;color:#0d2340}
+        .toolbar{display:flex;gap:10px;margin-bottom:1.5rem;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+        .fb{padding:8px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all .2s;display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0}
+        .fb.on{background:#0d2340;color:#ffffff;box-shadow:0 2px 8px rgba(13,35,64,.15)}
+        .fb.off{background:#ffffff;color:#64748b;border:1px solid #e2e8f0}
+        .fb.off:hover{background:#f1f5f9;color:#0d2340}
+        .layout{display:grid;grid-template-columns:1fr;gap:1.5rem;width:100%}
+        .layout.has-selected{grid-template-columns:1fr 380px}
+        .layout:not(.has-selected) .detail-col{display:none}
+        .card{background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
+        .op-item{padding:16px 18px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .15s;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+        .op-item:hover{background:#f8fafc}
+        .op-item.sel{background:#f8fafc;border-left:4px solid #0d2340}
+        .op-name{font-size:14.5px;font-weight:800;color:#0d2340;margin-bottom:2px}
+        .op-sub{font-size:12px;color:#64748b;line-height:1.5;word-break:break-word}
+        .op-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;white-space:nowrap}
 
-        .layout{display:grid;grid-template-columns:1fr 380px;gap:1.5rem}
+        .back-btn{display:none;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:10px;color:#0d2340;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px;font-family:inherit;width:fit-content;transition:all .15s}
+        .back-btn:hover{background:#e2e8f0}
 
-        .card-list{display:flex;flex-direction:column;gap:10px}
-        .op-card{
-          background:#ffffff;border:1px solid #e2e8f0;
-          border-radius:14px;padding:16px;cursor:pointer;transition:all .2s;
-          border-left:4px solid transparent;box-shadow:0 4px 12px rgba(0,0,0,0.03)
-        }
-        .op-card:hover{border-color:#cbd5e1;box-shadow:0 6px 16px rgba(0,0,0,0.05)}
-        .op-card.selected{border-color:#0d2340!important;background:#f8fafc}
-        .op-card.pending-card{border-left-color:#f59e0b}
-        .op-card.approved-card{border-left-color:#16a34a}
-        .op-card.rejected-card{border-left-color:#dc2626}
+        .panel{background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;position:sticky;top:2rem;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
+        .panel-title{font-size:15px;font-weight:800;margin-bottom:1rem;color:#0d2340;display:flex;justify-content:space-between;align-items:center}
+        .info-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:1.2rem}
+        .info-row{display:flex;justify-content:space-between;font-size:13px}
+        .info-lbl{color:#64748b}
+        .info-val{color:#0d2340;font-weight:700;text-align:right;word-break:break-word;max-width:60%}
+        .reason-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;font-size:13px;color:#334155;margin-bottom:1.2rem;line-height:1.5;font-weight:500;word-break:break-word}
+        .textarea{width:100%;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;color:#0d2340;font-size:13.5px;padding:10px 12px;outline:none;resize:vertical;min-height:70px;margin-bottom:1rem;font-family:inherit;font-weight:500}
+        .textarea:focus{border-color:#0d2340;background:#ffffff}
+        .act-btns{display:flex;gap:10px}
+        .btn-app{flex:1;height:44px;background:#16a34a;border:none;border-radius:10px;color:#ffffff;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .2s}
+        .btn-app:hover{background:#15803d}
+        .btn-rej{flex:1;height:44px;background:#dc2626;border:none;border-radius:10px;color:#ffffff;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .2s}
+        .btn-rej:hover{background:#b91c1c}
+        .btn-app:disabled,.btn-rej:disabled{opacity:.5;cursor:not-allowed}
 
-        .op-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
-        .op-student{display:flex;align-items:center;gap:10px}
-        .av{width:36px;height:36px;border-radius:10px;background:#0d2340;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#ffffff;flex-shrink:0}
-        .sname{font-size:13.5px;font-weight:800;color:#0d2340}
-        .smeta{font-size:11.5px;color:#64748b;margin-top:2px}
-        .status-tag{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:7px;white-space:nowrap}
-        .op-reason{font-size:13px;color:#334155;margin-bottom:6px;line-height:1.5;font-weight:500}
-        .op-details{display:flex;gap:16px;flex-wrap:wrap}
-        .op-det{font-size:11.5px;color:#64748b}
-        .op-det strong{color:#0d2340}
-
-        /* Detail panel */
-        .detail{
-          background:#ffffff;border:1px solid #e2e8f0;
-          border-radius:16px;padding:1.6rem;position:sticky;top:1rem;
-          height:fit-content;max-height:calc(100vh - 2rem);overflow-y:auto;
-          box-shadow:0 4px 12px rgba(0,0,0,0.03)
-        }
-        .det-title{font-size:14px;font-weight:800;color:#0d2340;margin-bottom:1.3rem;padding-bottom:1rem;border-bottom:1px solid #f1f5f9}
-        .det-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid #f1f5f9}
-        .det-row:last-of-type{border-bottom:none}
-        .det-key{font-size:12px;color:#64748b;font-weight:600}
-        .det-val{font-size:13px;color:#0d2340;font-weight:700;text-align:right;max-width:200px}
-
-        .remarks-lbl{font-size:12px;font-weight:700;color:#0d2340;margin-bottom:6px;margin-top:1.2rem;display:block}
-        .remarks-inp{
-          width:100%;padding:10px 13px;background:#f8fafc;
-          border:1px solid #cbd5e1;border-radius:10px;
-          color:#0d2340;font-size:13.5px;resize:vertical;min-height:80px;outline:none;
-          transition:border-color .2s;font-family:inherit;font-weight:500
-        }
-        .remarks-inp:focus{border-color:#0d2340;background:#ffffff}
-        .remarks-inp::placeholder{color:#94a3b8}
-
-        .action-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:1rem}
-        .btn-approve{
-          height:46px;background:#16a34a;
-          border:none;border-radius:11px;color:#ffffff;
-          font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;
-          display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s;
-        }
-        .btn-approve:hover{background:#15803d}
-        .btn-reject{
-          height:46px;background:#dc2626;
-          border:none;border-radius:11px;color:#ffffff;
-          font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;
-          display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s;
-        }
-        .btn-reject:hover{background:#b91c1c}
-        .btn-approve:disabled,.btn-reject:disabled{opacity:.5;cursor:not-allowed}
-
-        .empty{text-align:center;padding:3rem;color:#94a3b8}
-        .empty-ico{font-size:40px;margin-bottom:.8rem}
-        .skel{background:#f1f5f9;border-radius:10px;animation:sh 1.5s infinite}
+        .success-banner{background:#dcfce7;border:1px solid #86efac;border-radius:12px;padding:14px;margin-bottom:1rem;font-size:13px;color:#16a34a;display:flex;align-items:center;gap:10px;font-weight:600}
+        .skel{background:#f1f5f9;border-radius:10px;animation:sh 1.5s infinite;margin-bottom:8px}
         @keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
+        .toast{position:fixed;bottom:2rem;right:2rem;z-index:200;background:#0d2340;border:1px solid #1e293b;border-radius:12px;padding:13px 18px;font-size:13.5px;font-weight:600;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.2)}
+        .empty-p{text-align:center;padding:3rem 1rem;color:#94a3b8;font-size:13.5px}
 
-        .toast{
-          position:fixed;bottom:2rem;right:2rem;z-index:200;
-          background:#0d2340;border:1px solid #1e293b;
-          border-radius:12px;padding:13px 18px;
-          font-size:13.5px;font-weight:600;color:#fff;
-          box-shadow:0 10px 40px rgba(0,0,0,.2);
-          animation:slideIn .3s ease;
+        @media(max-width:900px){
+          .root{flex-direction:column;width:100%}
+          .layout{grid-template-columns:1fr}
+          .layout.has-selected .list-col{display:none}
+          .layout:not(.has-selected) .detail-col{display:none}
+          .back-btn{display:inline-flex}
+          .panel{position:static;margin-top:0}
+          .main{padding:1rem 1rem 90px 1rem;max-width:100vw;overflow-x:hidden}
+          .page-title{font-size:1.3rem}
+          .page-sub{font-size:12.5px;margin-bottom:1rem}
+          .fb{padding:7px 14px;font-size:12px}
         }
-        @keyframes slideIn{from{transform:translateX(30px);opacity:0}to{transform:translateX(0);opacity:1}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-
-        .no-select{text-align:center;padding:3rem 1rem;color:#94a3b8;font-size:13px}
-
-        @media(max-width:1100px){.layout{grid-template-columns:1fr}.detail{position:static}}
-        @media(max-width:768px){.main{padding:1.2rem;padding-bottom:80px}}
       `}</style>
 
       <div className="root">
-        <Sidebar pendingCount={outpasses.filter(o=>o.teacher_status==='pending').length} unreadCount={unread} />
+        <Sidebar unreadCount={unread} />
         <main className="main">
-          <div className="page-title">🚪 Outpass Requests</div>
-          <div className="page-sub">Review and approve student outpass requests for your department</div>
+          <div className="page-title">📋 Teacher Outpass Approvals</div>
+          <div className="page-sub">Review and process outpass requests submitted by students in your class</div>
 
           <div className="toolbar">
-            {['pending','approved','rejected'].map(f => (
-              <button key={f} className={`filter-btn ${filter===f?'on':'off'}`} onClick={()=>{ setFilter(f); setSelected(null); }}>
-                {f.charAt(0).toUpperCase()+f.slice(1)}
+            {[
+              { id: 'pending', label: '⏳ Pending Requests', cnt: outpasses.filter(o => o.teacher_status === 'pending').length },
+              { id: 'approved', label: '✅ Approved Requests', cnt: null },
+              { id: 'rejected', label: '❌ Rejected Requests', cnt: null },
+              { id: 'all', label: '📋 All Class Requests', cnt: null },
+            ].map(f => (
+              <button key={f.id} className={`fb ${filter === f.id ? 'on' : 'off'}`} onClick={() => { setFilter(f.id); setSelected(null); load(f.id); }}>
+                {f.label} {f.cnt !== null && f.cnt > 0 ? `(${f.cnt})` : ''}
               </button>
             ))}
           </div>
 
-          <div className="layout">
-            <div className="card-list">
-              {loading ? [1,2,3].map(i=><div key={i} className="skel" style={{height:110}}/>)
-              : outpasses.length === 0
-              ? <div className="empty"><div className="empty-ico">✅</div>No {filter} requests</div>
-              : outpasses.map(op => {
-                  const initials = op.student_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'ST';
-                  const st = STATUS_MAP[op.teacher_status] || STATUS_MAP.pending;
-                  return (
-                    <div key={op.id} className={`op-card ${op.teacher_status}-card${selected?.id===op.id?' selected':''}`}
-                      onClick={()=>{ setSelected(op); setRemarks(''); }}>
-                      <div className="op-top">
-                        <div className="op-student">
-                          <div className="av">{initials}</div>
-                          <div>
-                            <div className="sname">{op.student_name}</div>
-                            <div className="smeta">{op.roll_no} · Yr {op.year} · Sec {op.section} · {op.department}</div>
+          <div className={`layout ${selected ? 'has-selected' : ''}`}>
+            <div className="list-col">
+              {loading ? [1,2,3,4].map(i=><div key={i} className="skel" style={{height:72}}/>) :
+               displayOutpasses.length === 0 ? (
+                <div className="card empty-p">No {filter} outpasses found.</div>
+               ) : (
+                <div className="card">
+                  {displayOutpasses.map(op => {
+                    const isSel = selected?.id === op.id;
+                    const badge = statusBadge(op);
+                    return (
+                      <div key={op.id} className={`op-item ${isSel ? 'sel' : ''}`} onClick={() => selectOutpass(op)}>
+                        <div>
+                          <div className="op-name">{op.student_name}</div>
+                          <div className="op-sub">
+                            Roll: {op.roll_no} · Dept: {op.department}<br/>
+                            Destination: <strong>{op.destination}</strong> · Date: {op.from_date}
                           </div>
                         </div>
-                        <span className="status-tag" style={{color:st.color,background:st.bg}}>{st.label}</span>
+                        <span className="op-badge" style={{color: badge.color, background: badge.bg}}>{badge.text}</span>
                       </div>
-                      <div className="op-reason">📝 {op.reason}</div>
-                      <div className="op-details">
-                        <div className="op-det"><strong>📍 Dest:</strong> {op.destination}</div>
-                        <div className="op-det"><strong>📅</strong> {op.from_date}{op.to_date!==op.from_date?` → ${op.to_date}`:''}</div>
-                        <div className="op-det"><strong>🕐</strong> {op.from_time} – {op.to_time}</div>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+               )}
             </div>
 
-            {/* Detail panel */}
-            <div className="detail">
+            <div className="detail-col">
               {!selected ? (
-                <div className="no-select">
-                  <div style={{fontSize:36,marginBottom:8}}>👈</div>
-                  Select a request to review
-                </div>
+                <div className="panel empty-p">Select an outpass request to view details and take action</div>
               ) : (
-                <>
-                  <div className="det-title">📋 Outpass Details</div>
-                  {[
-                    ['Student', selected.student_name],
-                    ['Roll No', selected.roll_no],
-                    ['Department', selected.department],
-                    ['Year / Section', `Year ${selected.year} · Section ${selected.section}`],
-                    ['Reason', selected.reason],
-                    ['Destination', selected.destination],
-                    ['From Date', selected.from_date],
-                    ['To Date', selected.to_date],
-                    ['Time', `${selected.from_time} – ${selected.to_time}`],
-                    ['Applied On', new Date(selected.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})],
-                  ].map(([k,v])=>(
-                    <div key={k} className="det-row"><span className="det-key">{k}</span><span className="det-val">{v}</span></div>
-                  ))}
+                <div className="panel">
+                  <button className="back-btn" onClick={() => setSelected(null)}>
+                    ← Back to Outpass List
+                  </button>
 
-                  {selected.teacher_status === 'pending' && successId !== selected.id && (
+                  {successId === selected.id && (
+                    <div className="success-banner">
+                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.5"/><path d="M5 9l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      Outpass action updated successfully
+                    </div>
+                  )}
+
+                  <div className="panel-title">
+                    <span>Outpass #{selected.id}</span>
+                    <span className="op-badge" style={{color: statusBadge(selected).color, background: statusBadge(selected).bg}}>
+                      {statusBadge(selected).text}
+                    </span>
+                  </div>
+
+                  <div className="info-grid">
+                    <div className="info-row"><span className="info-lbl">Student Name</span><span className="info-val">{selected.student_name}</span></div>
+                    <div className="info-row"><span className="info-lbl">Roll Number</span><span className="info-val">{selected.roll_no}</span></div>
+                    <div className="info-row"><span className="info-lbl">Department</span><span className="info-val">{selected.department}</span></div>
+                    <div className="info-row"><span className="info-lbl">Destination</span><span className="info-val">{selected.destination}</span></div>
+                    <div className="info-row"><span className="info-lbl">From Date/Time</span><span className="info-val">{selected.from_date} {selected.from_time}</span></div>
+                    <div className="info-row"><span className="info-lbl">To Date/Time</span><span className="info-val">{selected.to_date} {selected.to_time}</span></div>
+                  </div>
+
+                  <div style={{fontSize:12,color:'#64748b',marginBottom:4}}>Reason for Outpass</div>
+                  <div className="reason-box">{selected.reason}</div>
+
+                  {selected.teacher_status === 'pending' && (
                     <>
-                      <label className="remarks-lbl">Your Remarks (optional)</label>
-                      <textarea className="remarks-inp" placeholder="Add remarks for your decision..."
-                        value={remarks} onChange={e=>setRemarks(e.target.value)} rows={3}/>
-                      <div className="action-btns">
-                        <button className="btn-approve" disabled={actioning} onClick={()=>handleAction(selected.id,'approve')}>
-                          {actioning ? <span style={{display:'flex',alignItems:'center',gap:6,justifyContent:'center'}}><span style={{width:16,height:16,border:'2px solid rgba(74,222,128,.3)',borderTopColor:'#4ade80',borderRadius:'50%',animation:'spin .7s linear infinite',display:'inline-block'}}/> Processing</span> : '✅ Approve'}
+                      <div style={{fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>
+                        Reason <span style={{color:'#ef4444'}}>*</span>
+                      </div>
+                      <textarea className="textarea" placeholder="Reason..."
+                        value={remarks} onChange={e => setRemarks(e.target.value)} />
+                      <div className="act-btns">
+                        <button className="btn-app" disabled={actioning} onClick={() => handleAction(selected.id, 'approve')}>
+                          {actioning ? 'Processing...' : '✓ Approve Request'}
                         </button>
-                        <button className="btn-reject" disabled={actioning} onClick={()=>handleAction(selected.id,'reject')}>
-                          {actioning ? '…' : '❌ Reject'}
+                        <button className="btn-rej" disabled={actioning} onClick={() => handleAction(selected.id, 'reject')}>
+                          Reject
                         </button>
                       </div>
                     </>
                   )}
-                  {selected.teacher_status === 'pending' && successId === selected.id && (
-                    <div style={{marginTop:'1rem',padding:'16px',background:'linear-gradient(135deg,rgba(74,222,128,.12),rgba(74,222,128,.06))',border:'1px solid rgba(74,222,128,.3)',borderRadius:12,fontSize:13.5,color:'#86efac',textAlign:'center',lineHeight:1.6}}>
-                      <div style={{fontSize:22,marginBottom:6}}>✅</div>
-                      <div style={{fontWeight:800,fontSize:14,color:'#4ade80',marginBottom:4}}>Request Approved!</div>
-                      <div style={{color:'rgba(255,255,255,.7)'}}>The request has been passed to the HOD for further review.</div>
-                    </div>
-                  )}
+
                   {selected.teacher_status === 'approved' && (
-                    <div style={{marginTop:'1rem',padding:'12px',background:'rgba(74,222,128,.08)',border:'1px solid rgba(74,222,128,.2)',borderRadius:10,fontSize:13,color:'#86efac'}}>
-                      ✅ You approved this request. It has been forwarded to the HOD.
-                      {selected.teacher_remarks && <div style={{marginTop:6,color:'rgba(255,255,255,.5)'}}>Note: {selected.teacher_remarks}</div>}
+                    <div style={{fontSize:13,fontWeight:700,color:'#16a34a',marginTop:12,padding:'10px 14px',background:'#dcfce7',border:'1px solid #86efac',borderRadius:10,textAlign:'center'}}>
+                      ✓ Approved by You
                     </div>
                   )}
+
+                  {selected.teacher_status === 'bypassed' && (
+                    <div style={{fontSize:13,fontWeight:700,color:'#d97706',marginTop:12,padding:'10px 14px',background:'#fef3c7',border:'1px solid #fcd34d',borderRadius:10,textAlign:'center'}}>
+                      ⚡ Class Teacher Absent (Auto-passed to HOD)
+                    </div>
+                  )}
+
                   {selected.teacher_status === 'rejected' && (
-                    <div style={{marginTop:'1rem',padding:'12px',background:'rgba(248,113,113,.08)',border:'1px solid rgba(248,113,113,.2)',borderRadius:10,fontSize:13,color:'#fca5a5'}}>
-                      ❌ You rejected this request.
-                      {selected.teacher_remarks && <div style={{marginTop:6}}>Reason: {selected.teacher_remarks}</div>}
+                    <div style={{fontSize:13,fontWeight:700,color:'#dc2626',marginTop:12,padding:'10px 14px',background:'#fee2e2',border:'1px solid #fca5a5',borderRadius:10,textAlign:'center'}}>
+                      ✕ Rejected by You
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
           </div>
         </main>
       </div>
+
       {toast && <div className="toast">{toast}</div>}
     </>
   );

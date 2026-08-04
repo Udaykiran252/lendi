@@ -18,8 +18,7 @@ function safeNotify(db, userId, title, message, type, outpassId) {
 }
 
 // GET /api/security/outpasses
-// Returns ONLY active outpasses fully approved by Teacher, HOD, and Principal.
-// Expired or fully completed (returned) past data is strictly excluded.
+// Returns ONLY active outpasses fully approved by Teacher, HOD, and Principal (or auto-bypassed when absent).
 router.get('/outpasses', (req, res) => {
   try {
     const user = verifyToken(req.headers['authorization']);
@@ -31,8 +30,6 @@ router.get('/outpasses', (req, res) => {
     const db = getDb();
     const todayStr = new Date().toISOString().slice(0, 10);
 
-    // Fetch ONLY fully approved outpasses (status = 'approved' & all 3 statuses = 'approved')
-    // and where student has NOT already completed their entry back, or to_date >= today
     const activeOutpasses = db.prepare(`
       SELECT o.*, u.name as student_name, u.email as student_email, u.department,
              s.roll_no, s.year, s.semester, s.section
@@ -40,18 +37,16 @@ router.get('/outpasses', (req, res) => {
       JOIN users u ON o.user_id = u.id
       LEFT JOIN students s ON o.student_id = s.id
       WHERE o.status = 'approved'
-        AND o.teacher_status = 'approved'
-        AND o.hod_status = 'approved'
-        AND o.principal_status = 'approved'
+        AND o.teacher_status IN ('approved', 'bypassed')
+        AND o.hod_status IN ('approved', 'bypassed')
+        AND o.principal_status IN ('approved', 'bypassed')
         AND o.entry_time IS NULL
         AND o.to_date >= ?
       ORDER BY o.created_at DESC
     `).all(todayStr);
 
-    // Stats calculation
     const currentlyOut = activeOutpasses.filter(o => o.exit_time !== null && o.entry_time === null).length;
     
-    // Today's total exit & return counts
     const exitedTodayCount = db.prepare(`
       SELECT COUNT(*) as cnt FROM outpasses
       WHERE status = 'approved' AND exit_time LIKE ?
@@ -78,7 +73,6 @@ router.get('/outpasses', (req, res) => {
 });
 
 // POST /api/security/verify
-// Verify gate exit / gate entry for a fully approved outpass
 router.post('/verify', (req, res) => {
   try {
     const user = verifyToken(req.headers['authorization']);
@@ -90,7 +84,6 @@ router.post('/verify', (req, res) => {
     const { outpass_id, action, raw_qr } = req.body || {};
     let targetId = outpass_id;
 
-    // Parse raw_qr string if provided from scanner
     if (!targetId && raw_qr) {
       const match = raw_qr.match(/Outpass ID\s*:\s*#?(\d+)/i) || raw_qr.match(/ID:?\s*#?(\d+)/i) || raw_qr.match(/^(\d+)$/);
       if (match) targetId = match[1];
@@ -110,9 +103,12 @@ router.post('/verify', (req, res) => {
 
     if (!op) return res.status(404).json({ error: `Outpass #${targetId} not found in system` });
 
-    // Enforce 3-level approval check
-    if (op.status !== 'approved' || op.teacher_status !== 'approved' || op.hod_status !== 'approved' || op.principal_status !== 'approved') {
-      return res.status(400).json({ error: '⛔ INVALID OUTPASS: Outpass is not fully approved by Teacher, HOD, and Principal!' });
+    const validTeacher = ['approved', 'bypassed'].includes(op.teacher_status);
+    const validHod = ['approved', 'bypassed'].includes(op.hod_status);
+    const validPrincipal = ['approved', 'bypassed'].includes(op.principal_status);
+
+    if (op.status !== 'approved' || !validTeacher || !validHod || !validPrincipal) {
+      return res.status(400).json({ error: '⛔ INVALID OUTPASS: Outpass is not fully approved!' });
     }
 
     const now = new Date().toISOString();
@@ -136,7 +132,6 @@ router.post('/verify', (req, res) => {
       safeNotify(db, op.student_user_id, '🏠 Gate Entry Logged', `Security guard verified campus return at ${formattedTime}`, 'info', op.id);
       return res.json({ message: `✅ Gate Entry Verified for ${op.student_name}. Outpass complete!`, entry_time: now, outpass: op });
     } else {
-      // Just lookup/preview details for security guard scan
       return res.json({ outpass: op });
     }
   } catch (err) {

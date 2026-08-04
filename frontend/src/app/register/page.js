@@ -55,8 +55,9 @@ export default function RegisterPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: form.name.trim(), email, password: form.password, roll_no: form.roll_no.toUpperCase().trim(), year: parseInt(form.year), semester: parseInt(form.semester), section: form.section||'A', department: form.department }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Registration failed');
+      let data = {};
+      try { data = await res.json(); } catch (jsonErr) {}
+      if (!res.ok) throw new Error(data.error || `Registration failed (${res.status}). Please try again.`);
       router.push('/login?registered=1');
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }

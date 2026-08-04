@@ -24,15 +24,15 @@ router.get('/', (req, res) => {
   if (user.role === 'class_teacher') {
     query += ` WHERE LOWER(TRIM(u.department)) = LOWER(TRIM('${user.department}'))`;
     if (filter === 'pending') query += ` AND o.teacher_status = 'pending'`;
-    else if (filter === 'approved') query += ` AND o.teacher_status = 'approved'`;
+    else if (filter === 'approved') query += ` AND o.teacher_status IN ('approved', 'bypassed')`;
     else if (filter === 'rejected') query += ` AND o.teacher_status = 'rejected'`;
   } else if (user.role === 'hod') {
-    query += ` WHERE LOWER(TRIM(u.department)) = LOWER(TRIM('${user.department}')) AND o.teacher_status = 'approved'`;
+    query += ` WHERE LOWER(TRIM(u.department)) = LOWER(TRIM('${user.department}')) AND o.teacher_status IN ('approved', 'bypassed')`;
     if (filter === 'pending') query += ` AND o.hod_status = 'pending'`;
-    else if (filter === 'approved') query += ` AND o.hod_status = 'approved'`;
+    else if (filter === 'approved') query += ` AND o.hod_status IN ('approved', 'bypassed')`;
     else if (filter === 'rejected') query += ` AND o.hod_status = 'rejected'`;
   } else if (user.role === 'principal') {
-    query += ` WHERE (o.teacher_status = 'approved' AND o.hod_status = 'approved')`;
+    query += ` WHERE (o.teacher_status IN ('approved', 'bypassed') AND o.hod_status IN ('approved', 'bypassed'))`;
     if (filter === 'pending') query += ` AND o.status = 'pending_principal'`;
     else if (filter === 'approved') query += ` AND o.status = 'approved'`;
     else if (filter === 'rejected') query += ` AND o.principal_status = 'rejected'`;

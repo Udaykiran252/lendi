@@ -50,8 +50,8 @@ export default function TeacherDashboard() {
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:'Inter','Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:#f8fafc;color:#0d2340}
-        .root{display:flex;min-height:100vh}
-        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc}
+        .root{display:flex;min-height:100vh;width:100%;max-width:100vw;overflow-x:hidden}
+        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc;width:100%;max-width:100vw}
         .topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2rem;flex-wrap:wrap;gap:1rem}
         .title{font-size:1.5rem;font-weight:800;color:#0d2340;letter-spacing:-.4px}
         .title span{color:#d9232d}
@@ -59,7 +59,7 @@ export default function TeacherDashboard() {
         .notif-btn{width:40px;height:40px;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#475569;text-decoration:none;position:relative;transition:all .2s;box-shadow:0 2px 5px rgba(0,0,0,0.02)}
         .notif-btn:hover{background:#f1f5f9;color:#0d2340}
         .nbadge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}
-        .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:2rem}
+        .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:2rem}
         .sc{background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:1.3rem;transition:all .2s;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
         .sc:hover{border-color:#f59e0b;transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.06)}
         .sc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.8rem}
@@ -82,18 +82,25 @@ export default function TeacherDashboard() {
         .op-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f1f5f9}
         .op-row:last-child{border-bottom:none}
         .op-av{width:36px;height:36px;border-radius:10px;background:#0d2340;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#ffffff;flex-shrink:0}
-        .op-info{flex:1}
+        .op-info{flex:1;word-break:break-word}
         .op-name{font-size:13px;font-weight:700;color:#0d2340}
         .op-meta{font-size:11.5px;color:#64748b;margin-top:2px}
         .op-actions{display:flex;gap:7px;flex-shrink:0}
-        .view-btn{padding:6px 11px;border-radius:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#0d2340;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center;transition:all .2s}
+        .view-btn{padding:6px 11px;border-radius:8px;background:#f8fafc;border:1px solid #cbd5e1;color:#0d2340;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center;transition:all .2s;white-space:nowrap}
         .view-btn:hover{background:#0d2340;color:#ffffff;border-color:#0d2340}
 
         .empty{text-align:center;padding:2.5rem;color:#94a3b8;font-size:13px}
         .skel{background:#f1f5f9;border-radius:8px;animation:sh 1.5s infinite}
         @keyframes sh{0%,100%{opacity:.5}50%{opacity:1}}
-        @media(max-width:1100px){.stats{grid-template-columns:1fr 1fr}}
-        @media(max-width:768px){.main{padding:1.2rem;padding-bottom:80px}.stats{grid-template-columns:1fr 1fr}}
+        @media(max-width:900px){
+          .root{flex-direction:column;width:100%}
+          .main{padding:1rem 1rem 90px 1rem;max-width:100vw;overflow-x:hidden}
+          .stats{grid-template-columns:1fr 1fr !important;gap:10px}
+          .title{font-size:1.3rem}
+        }
+        @media(max-width:480px){
+          .stats{grid-template-columns:1fr !important}
+        }
       `}</style>
 
       <div className="root">
@@ -111,7 +118,7 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Stats */}
-          <div className="stats" style={{gridTemplateColumns:'repeat(3, 1fr)'}}>
+          <div className="stats">
             {[
               { ico: '🎓', label: 'My Students', val: loading ? '…' : data?.students?.length || 0, bg: 'rgba(96,165,250,.12)', tag: 'tag-blue', tagLabel: user?.department, href: '/teacher/students' },
               { ico: '⏳', label: 'Pending Requests', val: loading ? '…' : pending.length, bg: 'rgba(251,191,36,.12)', tag: 'tag-warn', tagLabel: 'Need Action', href: '/teacher/outpass' },
@@ -129,31 +136,31 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Pending outpasses */}
-          <div className="section">
-            <div className="sec-head">
-              <span className="sec-title">⏳ Pending Outpass Requests {pending.length > 0 && <span style={{background:'#f87171',color:'#fff',fontSize:11,padding:'2px 7px',borderRadius:10,marginLeft:8}}>{pending.length}</span>}</span>
-              <Link href="/teacher/outpass" className="sec-link">View All →</Link>
+          {!loading && pending.length > 0 && (
+            <div className="section">
+              <div className="sec-head">
+                <span className="sec-title">⏳ Pending Outpass Requests <span style={{background:'#f87171',color:'#fff',fontSize:11,padding:'2px 7px',borderRadius:10,marginLeft:8}}>{pending.length}</span></span>
+                <Link href="/teacher/outpass" className="sec-link">View All →</Link>
+              </div>
+              <div className="sec-body">
+                {pending.slice(0,5).map(op => {
+                  const initials = op.student_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || 'ST';
+                  return (
+                    <div key={op.id} className="op-row">
+                      <div className="op-av">{initials}</div>
+                      <div className="op-info">
+                        <div className="op-name">{op.student_name} <span style={{color:'rgba(255,255,255,.35)',fontWeight:400}}>· {op.roll_no}</span></div>
+                        <div className="op-meta">📍 {op.destination} · 📅 {op.from_date} · {op.reason?.slice(0,50)}{op.reason?.length>50?'…':''}</div>
+                      </div>
+                      <div className="op-actions">
+                        <Link href={`/teacher/outpass?id=${op.id}`} className="view-btn">Review →</Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="sec-body">
-              {loading ? [1,2,3].map(i=><div key={i} className="skel" style={{height:52,marginBottom:8}}/>) :
-               pending.length === 0 ? <div className="empty">✅ No pending requests</div> :
-               pending.slice(0,5).map(op => {
-                 const initials = op.student_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || 'ST';
-                 return (
-                   <div key={op.id} className="op-row">
-                     <div className="op-av">{initials}</div>
-                     <div className="op-info">
-                       <div className="op-name">{op.student_name} <span style={{color:'rgba(255,255,255,.35)',fontWeight:400}}>· {op.roll_no}</span></div>
-                       <div className="op-meta">📍 {op.destination} · 📅 {op.from_date} · {op.reason?.slice(0,50)}{op.reason?.length>50?'…':''}</div>
-                     </div>
-                     <div className="op-actions">
-                       <Link href={`/teacher/outpass?id=${op.id}`} className="view-btn">Review →</Link>
-                     </div>
-                   </div>
-                 );
-               })}
-            </div>
-          </div>
+          )}
 
           {/* Student Outpass Monitor */}
           <div className="section">
