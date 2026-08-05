@@ -108,7 +108,7 @@ export default function TeacherOutpassPage() {
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:'Inter','Plus Jakarta Sans','Segoe UI',system-ui,sans-serif;background:#f8fafc;color:#0d2340}
         .root{display:flex;min-height:100vh;width:100%;max-width:100vw;overflow-x:hidden}
-        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;background:#f8fafc;width:100%;max-width:100vw}
+        .main{flex:1;padding:2rem 2.5rem;min-height:100vh;overflow-y:auto;background:#f8fafc;width:100%;max-width:1440px;margin:0 auto}
         .page-title{font-size:1.5rem;font-weight:800;margin-bottom:.3rem;color:#0d2340}
         .page-sub{font-size:13.5px;color:#64748b;margin-bottom:1.5rem}
         .toolbar{display:flex;gap:10px;margin-bottom:1.5rem;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
@@ -117,7 +117,7 @@ export default function TeacherOutpassPage() {
         .fb.off{background:#ffffff;color:#64748b;border:1px solid #e2e8f0}
         .fb.off:hover{background:#f1f5f9;color:#0d2340}
         .layout{display:grid;grid-template-columns:1fr;gap:1.5rem;width:100%}
-        .layout.has-selected{grid-template-columns:1fr 380px}
+        .layout.has-selected{grid-template-columns:1fr minmax(320px, 420px)}
         .layout:not(.has-selected) .detail-col{display:none}
         .card{background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
         .op-item{padding:16px 18px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .15s;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -130,7 +130,7 @@ export default function TeacherOutpassPage() {
         .back-btn{display:none;align-items:center;gap:6px;padding:8px 14px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:10px;color:#0d2340;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px;font-family:inherit;width:fit-content;transition:all .15s}
         .back-btn:hover{background:#e2e8f0}
 
-        .panel{background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;position:sticky;top:2rem;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
+        .panel{background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;position:sticky;top:2rem;max-height:calc(100vh - 4rem);overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.03)}
         .panel-title{font-size:15px;font-weight:800;margin-bottom:1rem;color:#0d2340;display:flex;justify-content:space-between;align-items:center}
         .info-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:1.2rem}
         .info-row{display:flex;justify-content:space-between;font-size:13px}
