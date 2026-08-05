@@ -111,13 +111,18 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
     <>
       <style>{`
         .sb{
-          width:${collapsed?'68px':'240px'};min-height:100vh;
+          width:${collapsed?'68px':'240px'};height:100vh;
           background:#ffffff;
           border-right:1px solid #e2e8f0;
           display:flex;flex-direction:column;
           transition:width .3s cubic-bezier(.4,0,.2,1);
-          flex-shrink:0;position:sticky;top:0;height:100vh;overflow:hidden;
+          flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:90;overflow:hidden;
           ${collapsed?'cursor:pointer;':''}
+        }
+        .sb-spacer{
+          width:${collapsed?'68px':'240px'};height:100vh;
+          flex-shrink:0;
+          transition:width .3s cubic-bezier(.4,0,.2,1);
         }
         .sb-head{
           padding:${collapsed?'16px 0':'16px 18px'};
@@ -250,7 +255,7 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
         .mob-dot{position:absolute;top:4px;right:6px;width:6px;height:6px;background:#ef4444;border-radius:50%}
         
         @media(max-width:900px){
-          .sb{display:none !important}
+          .sb, .sb-spacer{display:none !important}
           .mob-top-bar{display:flex}
           .mob-bar{display:block}
         }
@@ -317,6 +322,7 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
         )}
       </div>
 
+      <div className="sb-spacer" />
       <aside className="sb" onClick={() => { if (collapsed) setCollapsed(false); }}>
         <div className="sb-head">
           <div className="sb-logo">
