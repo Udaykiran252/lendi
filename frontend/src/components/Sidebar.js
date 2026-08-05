@@ -45,6 +45,8 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [notifPermission, setNotifPermission] = useState('default');
+  const [activeToast, setActiveToast] = useState(null);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -66,6 +68,86 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Web Device Push Notification permission & Background Polling
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotifPermission(Notification.permission);
+    }
+
+    const pollNotifications = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const res = await fetch('/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const notifs = data.notifications || [];
+
+        const rawSeen = localStorage.getItem('seen_notif_ids');
+        let seenIds = new Set(rawSeen ? JSON.parse(rawSeen) : []);
+
+        const unseenUnread = notifs.filter(n => !n.is_read && !seenIds.has(n.id));
+
+        if (unseenUnread.length > 0) {
+          const latest = unseenUnread[0];
+
+          // Trigger Device System Notification Pop-up
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            try {
+              const sysNotif = new Notification('Lendi Outpass Portal 🔔', {
+                body: latest.message,
+                icon: '/lendi-crest.png',
+                tag: `lendi-notif-${latest.id}`,
+              });
+              sysNotif.onclick = () => {
+                window.focus();
+                router.push('/notifications');
+              };
+            } catch (e) {
+              console.error(e);
+            }
+          }
+
+          // Trigger Floating Device Toast Pop-up
+          setActiveToast(latest);
+          setTimeout(() => setActiveToast(null), 7000);
+
+          // Device vibration feedback
+          if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
+            try { navigator.vibrate([150, 100, 150]); } catch (e) {}
+          }
+
+          // Save seen notification IDs
+          unseenUnread.forEach(n => seenIds.add(n.id));
+          localStorage.setItem('seen_notif_ids', JSON.stringify(Array.from(seenIds)));
+        }
+      } catch (e) {}
+    };
+
+    pollNotifications();
+    const interval = setInterval(pollNotifications, 8000);
+    return () => clearInterval(interval);
+  }, [router]);
+
+  const requestNotifPermission = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const perm = await Notification.requestPermission();
+        setNotifPermission(perm);
+        if (perm === 'granted') {
+          new Notification('Lendi Outpass Portal 🔔', {
+            body: 'Device pop-up notifications enabled successfully!',
+            icon: '/lendi-crest.png',
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -214,6 +296,34 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
         .status-opt-title{font-size:12.5px;font-weight:700;color:#0d2340;display:flex;align-items:center;gap:6px}
         .status-opt-desc{font-size:11px;color:#64748b;margin-top:1px}
 
+        .notif-perm-btn{
+          width:100%;margin-bottom:8px;padding:7px 10px;
+          border-radius:8px;border:1px dashed #cbd5e1;
+          background:#f8fafc;color:#2563eb;font-size:11.5px;font-weight:700;
+          display:flex;align-items:center;gap:6px;cursor:pointer;font-family:inherit;transition:all .2s;
+        }
+        .notif-perm-btn:hover{background:#eff6ff;border-color:#93c5fd}
+
+        .device-toast-banner{
+          position:fixed;top:24px;right:24px;z-index:999999;
+          background:#0d2340;color:#ffffff;border-radius:14px;
+          padding:14px 16px;box-shadow:0 16px 36px rgba(0,0,0,0.25);
+          display:flex;align-items:flex-start;gap:12px;max-width:360px;
+          cursor:pointer;animation:popInRight .35s cubic-bezier(.16,1,.3,1);
+          border:1px solid rgba(255,255,255,0.1);
+        }
+        @keyframes popInRight{
+          from{transform:translateX(120%) scale(.9);opacity:0}
+          to{transform:translateX(0) scale(1);opacity:1}
+        }
+        .toast-ico{font-size:22px;line-height:1;background:rgba(255,255,255,0.1);padding:8px;border-radius:10px;flex-shrink:0}
+        .toast-content{flex:1}
+        .toast-head{font-size:13px;font-weight:800;color:#60a5fa;margin-bottom:2px}
+        .toast-body{font-size:12.5px;color:#f1f5f9;line-height:1.4;margin-bottom:4px}
+        .toast-action{font-size:11px;font-weight:700;color:#38bdf8}
+        .toast-close{background:none;border:none;color:#94a3b8;font-size:14px;cursor:pointer;padding:2px;line-height:1}
+        .toast-close:hover{color:#ffffff}
+
         .logout-btn{
           width:100%;display:flex;align-items:center;gap:10px;
           justify-content:${collapsed?'center':'flex-start'};
@@ -260,6 +370,33 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
           .mob-bar{display:block}
         }
       `}</style>
+
+      {/* Floating Device Toast Notification Banner */}
+      {activeToast && (
+        <div 
+          className="device-toast-banner"
+          onClick={() => {
+            setActiveToast(null);
+            router.push('/notifications');
+          }}
+        >
+          <div className="toast-ico">🔔</div>
+          <div className="toast-content">
+            <div className="toast-head">Lendi Notification Pop-up</div>
+            <div className="toast-body">{activeToast.message}</div>
+            <div className="toast-action">Tap to view details →</div>
+          </div>
+          <button 
+            className="toast-close"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveToast(null);
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Mobile Top Header with presence status toggle */}
       <div className="mob-top-bar" ref={menuRef}>
@@ -364,6 +501,17 @@ export default function Sidebar({ unreadCount = 0, pendingCount = 0 }) {
         </nav>
 
         <div className="sb-footer" ref={menuRef}>
+          {notifPermission === 'default' && !collapsed && (
+            <button 
+              className="notif-perm-btn"
+              onClick={requestNotifPermission}
+              title="Click to enable native device pop-up notifications"
+            >
+              <span>🔔</span>
+              <span>Enable Device Pop-ups</span>
+            </button>
+          )}
+
           {isFaculty && (
             <>
               <button 
