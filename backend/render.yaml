@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: lendi-backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: JWT_SECRET
+        value: lendi_secret_key_2026_production
