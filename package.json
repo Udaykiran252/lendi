@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
+    "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
     "start": "cd frontend && npm start",
     "dev:backend": "cd backend && npm run dev",
@@ -10,5 +11,11 @@
     "start:backend": "cd backend && npm start",
     "start:frontend": "cd frontend && npm start",
     "build:frontend": "cd frontend && npm run build"
+  },
+  "dependencies": {
+    "next": "16.2.6",
+    "qrcode": "^1.5.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   }
 }
