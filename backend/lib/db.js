@@ -1,168 +1,216 @@
+const { Pool } = require('pg');
 const Database = require('better-sqlite3');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
 const DB_PATH = path.join(__dirname, '..', 'lendi.db');
-let db;
+let pool;
+let sqliteDb;
 
-function initDb(database) {
-  database.exec(`
+function getPool() {
+  if (!pool) {
+    const connectionString = process.env.DATABASE_URL;
+    const config = connectionString
+      ? {
+          connectionString,
+          ssl: process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+        }
+      : {
+          host: process.env.PGHOST || 'localhost',
+          port: parseInt(process.env.PGPORT || '5432'),
+          user: process.env.PGUSER || 'postgres',
+          password: process.env.PGPASSWORD || 'postgres',
+          database: process.env.PGDATABASE || 'lendi_db',
+          ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+        };
+    pool = new Pool(config);
+  }
+  return pool;
+}
+
+async function initPostgresDb(clientOrPool) {
+  const query = (text, params) => clientOrPool.query(text, params);
+
+  await query(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      name TEXT NOT NULL,
-      role TEXT NOT NULL,
-      department TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      role VARCHAR(50) NOT NULL,
+      department VARCHAR(50),
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS students (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER UNIQUE NOT NULL,
-      roll_no TEXT UNIQUE NOT NULL,
-      year INTEGER NOT NULL,
-      semester INTEGER NOT NULL,
-      section TEXT DEFAULT 'A',
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      id SERIAL PRIMARY KEY,
+      user_id INT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      roll_no VARCHAR(50) UNIQUE NOT NULL,
+      year INT NOT NULL,
+      semester INT NOT NULL,
+      section VARCHAR(10) DEFAULT 'A'
     );
 
     CREATE TABLE IF NOT EXISTS outpasses (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      student_id INTEGER,
-      user_id INTEGER NOT NULL,
+      id SERIAL PRIMARY KEY,
+      student_id INT REFERENCES students(id) ON DELETE SET NULL,
+      user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       reason TEXT NOT NULL,
       destination TEXT NOT NULL,
-      from_date TEXT NOT NULL,
-      to_date TEXT NOT NULL,
-      from_time TEXT,
-      to_time TEXT,
-      status TEXT DEFAULT 'pending_teacher',
-      teacher_status TEXT DEFAULT 'pending',
+      from_date VARCHAR(50) NOT NULL,
+      to_date VARCHAR(50) NOT NULL,
+      from_time VARCHAR(50),
+      to_time VARCHAR(50),
+      status VARCHAR(50) DEFAULT 'pending_teacher',
+      teacher_status VARCHAR(50) DEFAULT 'pending',
       teacher_remarks TEXT,
-      teacher_action_at DATETIME,
-      hod_status TEXT DEFAULT 'pending',
+      teacher_action_at TIMESTAMPTZ,
+      hod_status VARCHAR(50) DEFAULT 'pending',
       hod_remarks TEXT,
-      hod_action_at DATETIME,
-      principal_status TEXT DEFAULT 'pending',
+      hod_action_at TIMESTAMPTZ,
+      principal_status VARCHAR(50) DEFAULT 'pending',
       principal_remarks TEXT,
-      principal_action_at DATETIME,
-      exit_time DATETIME,
-      entry_time DATETIME,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-      FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE SET NULL
+      principal_action_at TIMESTAMPTZ,
+      exit_time TIMESTAMPTZ,
+      entry_time TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS notifications (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      title TEXT NOT NULL,
+      id SERIAL PRIMARY KEY,
+      user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title VARCHAR(255) NOT NULL,
       message TEXT NOT NULL,
-      type TEXT DEFAULT 'info',
-      outpass_id INTEGER,
-      read INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      type VARCHAR(50) DEFAULT 'info',
+      outpass_id INT,
+      read INT DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS subjects (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      code TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      faculty_name TEXT,
-      department TEXT NOT NULL,
-      year INTEGER,
-      semester INTEGER
+      id SERIAL PRIMARY KEY,
+      code VARCHAR(50) UNIQUE NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      faculty_name VARCHAR(255),
+      department VARCHAR(50) NOT NULL,
+      year INT,
+      semester INT
     );
 
     CREATE TABLE IF NOT EXISTS attendance (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      student_id INTEGER NOT NULL,
-      subject_id INTEGER NOT NULL,
-      date TEXT NOT NULL,
-      status TEXT NOT NULL CHECK(status IN ('present', 'absent')),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-      FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+      id SERIAL PRIMARY KEY,
+      student_id INT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+      subject_id INT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+      date VARCHAR(50) NOT NULL,
+      status VARCHAR(20) NOT NULL CHECK(status IN ('present', 'absent')),
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS authorized_emails (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
-      roll_no TEXT UNIQUE,
-      name TEXT NOT NULL,
-      department TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      roll_no VARCHAR(50) UNIQUE,
+      name VARCHAR(255) NOT NULL,
+      department VARCHAR(50) NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS staff_attendance (
+      id SERIAL PRIMARY KEY,
+      user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date VARCHAR(50) NOT NULL,
+      status VARCHAR(20) NOT NULL CHECK(status IN ('present', 'absent', 'leave')),
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_students_user_id ON students(user_id);
+    CREATE INDEX IF NOT EXISTS idx_outpasses_user_id ON outpasses(user_id);
+    CREATE INDEX IF NOT EXISTS idx_outpasses_student_id ON outpasses(student_id);
+    CREATE INDEX IF NOT EXISTS idx_outpasses_status ON outpasses(status);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+    CREATE INDEX IF NOT EXISTS idx_attendance_student_id ON attendance(student_id);
   `);
 
-  try { database.exec(`ALTER TABLE notifications ADD COLUMN outpass_id INTEGER`); } catch {}
-
-  // Seed Authorized Emails
-  const authCount = database.prepare('SELECT COUNT(*) as count FROM authorized_emails').get()?.count || 0;
-  if (authCount === 0) {
-    const insertAuth = database.prepare('INSERT OR IGNORE INTO authorized_emails (email, roll_no, name, department) VALUES (?, ?, ?, ?)');
-    insertAuth.run('rahul.kumar@lendi.edu.in', '21KD1A0501', 'Rahul Kumar', 'CSE');
-    insertAuth.run('priya.sharma@lendi.edu.in', '21KD1A0502', 'Priya Sharma', 'CSE');
-    insertAuth.run('arun.reddy@lendi.edu.in', '21KD1A0401', 'Arun Reddy', 'ECE');
-    insertAuth.run('sneha.patel@lendi.edu.in', '21KD1A0201', 'Sneha Patel', 'EEE');
-    insertAuth.run('vikram.naidu@lendi.edu.in', '21KD1A0301', 'Vikram Naidu', 'MECH');
-    insertAuth.run('teacher.cse@lendi.edu.in', null, 'Dr. Ramesh Babu', 'CSE');
-    insertAuth.run('hod.cse@lendi.edu.in', null, 'Dr. Srinivasa Rao', 'CSE');
-    insertAuth.run('principal@lendi.edu.in', null, 'Dr. V. V. Nageswara Rao', 'ADMIN');
-    insertAuth.run('gate.security@lendi.edu.in', null, 'Main Gate Security', 'SECURITY');
-    insertAuth.run('admin@lendi.edu.in', null, 'System Admin', 'ADMIN');
+  // Seed Authorized Emails if empty
+  const authRes = await query('SELECT COUNT(*)::int as count FROM authorized_emails');
+  if ((authRes.rows[0]?.count || 0) === 0) {
+    const insertAuth = 'INSERT INTO authorized_emails (email, roll_no, name, department) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING';
+    await query(insertAuth, ['rahul.kumar@lendi.edu.in', '21KD1A0501', 'Rahul Kumar', 'CSE']);
+    await query(insertAuth, ['priya.sharma@lendi.edu.in', '21KD1A0502', 'Priya Sharma', 'CSE']);
+    await query(insertAuth, ['arun.reddy@lendi.edu.in', '21KD1A0401', 'Arun Reddy', 'ECE']);
+    await query(insertAuth, ['sneha.patel@lendi.edu.in', '21KD1A0201', 'Sneha Patel', 'EEE']);
+    await query(insertAuth, ['vikram.naidu@lendi.edu.in', '21KD1A0301', 'Vikram Naidu', 'MECH']);
+    await query(insertAuth, ['teacher.cse@lendi.edu.in', null, 'Dr. Ramesh Babu', 'CSE']);
+    await query(insertAuth, ['hod.cse@lendi.edu.in', null, 'Dr. Srinivasa Rao', 'CSE']);
+    await query(insertAuth, ['principal@lendi.edu.in', null, 'Dr. V. V. Nageswara Rao', 'ADMIN']);
+    await query(insertAuth, ['gate.security@lendi.edu.in', null, 'Main Gate Security', 'SECURITY']);
+    await query(insertAuth, ['admin@lendi.edu.in', null, 'System Admin', 'ADMIN']);
   }
 
-  const userCount = database.prepare('SELECT COUNT(*) as count FROM users').get()?.count || 0;
-  if (userCount === 0) {
+  // Seed Users if empty
+  const userRes = await query('SELECT COUNT(*)::int as count FROM users');
+  if ((userRes.rows[0]?.count || 0) === 0) {
     const pwdHash = bcrypt.hashSync('password123', 10);
     const adminHash = bcrypt.hashSync('admin123', 10);
 
-    const insertUser = database.prepare('INSERT INTO users (name, email, password, role, department) VALUES (?, ?, ?, ?, ?)');
-    const insertStudent = database.prepare('INSERT INTO students (user_id, roll_no, year, semester, section) VALUES (?, ?, ?, ?, ?)');
+    const insertUserSql = 'INSERT INTO users (name, email, password, role, department) VALUES ($1, $2, $3, $4, $5) RETURNING id';
+    const insertStudentSql = 'INSERT INTO students (user_id, roll_no, year, semester, section) VALUES ($1, $2, $3, $4, $5)';
 
-    const u1 = insertUser.run('Rahul Kumar', 'rahul.kumar@lendi.edu.in', pwdHash, 'student', 'CSE');
-    insertStudent.run(u1.lastInsertRowid, '21KD1A0501', 3, 2, 'A');
+    const u1 = await query(insertUserSql, ['Rahul Kumar', 'rahul.kumar@lendi.edu.in', pwdHash, 'student', 'CSE']);
+    await query(insertStudentSql, [u1.rows[0].id, '21KD1A0501', 3, 2, 'A']);
 
-    const u2 = insertUser.run('Priya Sharma', 'priya.sharma@lendi.edu.in', pwdHash, 'student', 'CSE');
-    insertStudent.run(u2.lastInsertRowid, '21KD1A0502', 3, 2, 'A');
+    const u2 = await query(insertUserSql, ['Priya Sharma', 'priya.sharma@lendi.edu.in', pwdHash, 'student', 'CSE']);
+    await query(insertStudentSql, [u2.rows[0].id, '21KD1A0502', 3, 2, 'A']);
 
-    const u3 = insertUser.run('Arun Reddy', 'arun.reddy@lendi.edu.in', pwdHash, 'student', 'ECE');
-    insertStudent.run(u3.lastInsertRowid, '21KD1A0401', 3, 2, 'B');
+    const u3 = await query(insertUserSql, ['Arun Reddy', 'arun.reddy@lendi.edu.in', pwdHash, 'student', 'ECE']);
+    await query(insertStudentSql, [u3.rows[0].id, '21KD1A0401', 3, 2, 'B']);
 
-    const u4 = insertUser.run('Sneha Patel', 'sneha.patel@lendi.edu.in', pwdHash, 'student', 'EEE');
-    insertStudent.run(u4.lastInsertRowid, '21KD1A0201', 3, 2, 'A');
+    const u4 = await query(insertUserSql, ['Sneha Patel', 'sneha.patel@lendi.edu.in', pwdHash, 'student', 'EEE']);
+    await query(insertStudentSql, [u4.rows[0].id, '21KD1A0201', 3, 2, 'A']);
 
-    const u5 = insertUser.run('Vikram Naidu', 'vikram.naidu@lendi.edu.in', pwdHash, 'student', 'MECH');
-    insertStudent.run(u5.lastInsertRowid, '21KD1A0301', 3, 2, 'A');
+    const u5 = await query(insertUserSql, ['Vikram Naidu', 'vikram.naidu@lendi.edu.in', pwdHash, 'student', 'MECH']);
+    await query(insertStudentSql, [u5.rows[0].id, '21KD1A0301', 3, 2, 'A']);
 
-    insertUser.run('Dr. Ramesh Babu', 'teacher.cse@lendi.edu.in', pwdHash, 'class_teacher', 'CSE');
-    insertUser.run('Prof. Lakshmi Devi', 'teacher.ece@lendi.edu.in', pwdHash, 'class_teacher', 'ECE');
-    insertUser.run('Prof. Suresh Kumar', 'teacher.eee@lendi.edu.in', pwdHash, 'class_teacher', 'EEE');
-    insertUser.run('Prof. Rajesh Varma', 'teacher.mech@lendi.edu.in', pwdHash, 'class_teacher', 'MECH');
+    await query(insertUserSql, ['Dr. Ramesh Babu', 'teacher.cse@lendi.edu.in', pwdHash, 'class_teacher', 'CSE']);
+    await query(insertUserSql, ['Prof. Lakshmi Devi', 'teacher.ece@lendi.edu.in', pwdHash, 'class_teacher', 'ECE']);
+    await query(insertUserSql, ['Prof. Suresh Kumar', 'teacher.eee@lendi.edu.in', pwdHash, 'class_teacher', 'EEE']);
+    await query(insertUserSql, ['Prof. Rajesh Varma', 'teacher.mech@lendi.edu.in', pwdHash, 'class_teacher', 'MECH']);
 
-    insertUser.run('Dr. Srinivasa Rao', 'hod.cse@lendi.edu.in', pwdHash, 'hod', 'CSE');
-    insertUser.run('Dr. Padmaja', 'hod.ece@lendi.edu.in', pwdHash, 'hod', 'ECE');
-    insertUser.run('Dr. Venkat Rao', 'hod.eee@lendi.edu.in', pwdHash, 'hod', 'EEE');
-    insertUser.run('Dr. Krishna Murthy', 'hod.mech@lendi.edu.in', pwdHash, 'hod', 'MECH');
+    await query(insertUserSql, ['Dr. Srinivasa Rao', 'hod.cse@lendi.edu.in', pwdHash, 'hod', 'CSE']);
+    await query(insertUserSql, ['Dr. Padmaja', 'hod.ece@lendi.edu.in', pwdHash, 'hod', 'ECE']);
+    await query(insertUserSql, ['Dr. Venkat Rao', 'hod.eee@lendi.edu.in', pwdHash, 'hod', 'EEE']);
+    await query(insertUserSql, ['Dr. Krishna Murthy', 'hod.mech@lendi.edu.in', pwdHash, 'hod', 'MECH']);
 
-    insertUser.run('Dr. V. V. Nageswara Rao', 'principal@lendi.edu.in', pwdHash, 'principal', null);
-    insertUser.run('System Admin', 'admin@lendi.edu.in', adminHash, 'admin', null);
-    insertUser.run('Main Gate Security', 'gate.security@lendi.edu.in', pwdHash, 'gate_staff', null);
+    await query(insertUserSql, ['Dr. V. V. Nageswara Rao', 'principal@lendi.edu.in', pwdHash, 'principal', null]);
+    await query(insertUserSql, ['System Admin', 'admin@lendi.edu.in', adminHash, 'admin', null]);
+    await query(insertUserSql, ['Main Gate Security', 'gate.security@lendi.edu.in', pwdHash, 'gate_staff', null]);
   }
-
 }
+
+let isInitialized = false;
 
 function getDb() {
-  if (!db) {
-    db = new Database(DB_PATH);
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON');
-    initDb(db);
+  const p = getPool();
+  if (!isInitialized) {
+    isInitialized = true;
+    initPostgresDb(p).catch(err => {
+      console.error('PostgreSQL DB initialization error:', err);
+    });
   }
-  return db;
+  return {
+    query: (text, params) => p.query(text, params),
+    getClient: () => p.connect(),
+    pool: p
+  };
 }
 
-module.exports = { getDb };
+function getSqliteDb() {
+  if (!sqliteDb) {
+    sqliteDb = new Database(DB_PATH);
+    sqliteDb.pragma('journal_mode = WAL');
+    sqliteDb.pragma('foreign_keys = ON');
+  }
+  return sqliteDb;
+}
+
+module.exports = { getDb, getPool, getSqliteDb, initPostgresDb };

@@ -3,14 +3,14 @@ const router = express.Router();
 const { getDb } = require('../lib/db');
 const { verifyToken } = require('../lib/auth');
 
-function safeNotify(db, userId, title, message, type, outpassId) {
+async function safeNotify(db, userId, title, message, type, outpassId) {
   try {
-    db.prepare(`INSERT INTO notifications(user_id,title,message,type,outpass_id) VALUES(?,?,?,?,?)`)
-      .run(userId, title, message, type, outpassId);
+    await db.query(`INSERT INTO notifications(user_id,title,message,type,outpass_id) VALUES($1,$2,$3,$4,$5)`,
+      [userId, title, message, type, outpassId]);
   } catch (e) {
     try {
-      db.prepare(`INSERT INTO notifications(user_id,title,message,type) VALUES(?,?,?,?)`)
-        .run(userId, title, message, type);
+      await db.query(`INSERT INTO notifications(user_id,title,message,type) VALUES($1,$2,$3,$4)`,
+        [userId, title, message, type]);
     } catch (e2) {
       console.error('Notification error:', e2.message);
     }
@@ -18,34 +18,37 @@ function safeNotify(db, userId, title, message, type, outpassId) {
 }
 
 // GET /api/outpass
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const user = verifyToken(req.headers['authorization']);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
   const db = getDb();
   let outpasses = [];
   if (user.role === 'student') {
-    const student = db.prepare('SELECT * FROM students WHERE user_id=?').get(user.userId);
+    const studentRes = await db.query('SELECT * FROM students WHERE user_id=$1', [user.userId]);
+    const student = studentRes.rows[0];
     if (!student) return res.status(404).json({ error: 'Student not found' });
-    outpasses = db.prepare(`
+    const opRes = await db.query(`
       SELECT o.*, u.name as student_name, u.email as student_email, u.department,
              s.roll_no, s.year, s.semester, s.section
       FROM outpasses o
       JOIN users u ON o.user_id = u.id
       LEFT JOIN students s ON o.student_id = s.id
-      WHERE o.student_id = ?
+      WHERE o.student_id = $1
       ORDER BY o.created_at DESC
-    `).all(student.id);
+    `, [student.id]);
+    outpasses = opRes.rows;
   } else {
-    outpasses = db.prepare(`
+    const opRes = await db.query(`
       SELECT o.*, u.name as student_name, u.email as student_email, u.department,
              s.roll_no, s.year, s.semester, s.section
       FROM outpasses o
       JOIN users u ON o.user_id = u.id
       LEFT JOIN students s ON o.student_id = s.id
-      WHERE o.user_id = ?
+      WHERE o.user_id = $1
       ORDER BY o.created_at DESC
-    `).all(user.userId);
+    `, [user.userId]);
+    outpasses = opRes.rows;
   }
   return res.json({ outpasses });
 });
@@ -64,22 +67,42 @@ router.post('/', async (req, res) => {
     if (!reason || !destination || !from_date || !to_date) {
       return res.status(400).json({ error: 'Required fields missing' });
     }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const student = db.prepare('SELECT * FROM students WHERE user_id=?').get(user.userId);
+    const fromDate = new Date(from_date);
+    const toDate = new Date(to_date);
+
+    if (fromDate < today) {
+      return res.status(400).json({
+        error: "Past dates are not allowed."
+      });
+    }
+
+    if (toDate < fromDate) {
+      return res.status(400).json({
+        error: "To Date cannot be earlier than From Date."
+      });
+    }
+    const studentRes = await db.query('SELECT * FROM students WHERE user_id=$1', [user.userId]);
+    const student = studentRes.rows[0];
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
-    const result = db.prepare(`
+    const result = await db.query(`
       INSERT INTO outpasses(student_id,user_id,reason,destination,from_date,to_date,from_time,to_time,status,teacher_status,hod_status,principal_status)
-      VALUES(?,?,?,?,?,?,?,?,'pending_teacher','pending','pending','pending')
-    `).run(student.id, user.userId, reason, destination, from_date, to_date, from_time || '', to_time || '');
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,'pending_teacher','pending','pending','pending')
+      RETURNING id
+    `, [student.id, user.userId, reason, destination, from_date, to_date, from_time || '', to_time || '']);
+    const newOutpassId = result.rows[0].id;
 
-    const teacher = db.prepare(`SELECT id FROM users WHERE LOWER(TRIM(department))=LOWER(TRIM(?)) AND role='class_teacher' LIMIT 1`).get(user.department);
+    const teacherRes = await db.query(`SELECT id FROM users WHERE LOWER(TRIM(department))=LOWER(TRIM($1)) AND role='class_teacher' LIMIT 1`, [user.department]);
+    const teacher = teacherRes.rows[0];
     if (teacher) {
-      safeNotify(db, teacher.id, 'New Outpass Request', `${user.name} has submitted an outpass request — ${reason}`, 'action', result.lastInsertRowid);
+      await safeNotify(db, teacher.id, 'New Outpass Request', `${user.name} has submitted an outpass request — ${reason}`, 'action', newOutpassId);
     }
-    safeNotify(db, user.userId, 'Outpass Submitted', `Your outpass request for "${destination}" has been successfully submitted.`, 'info', result.lastInsertRowid);
+    await safeNotify(db, user.userId, 'Outpass Submitted', `Your outpass request for "${destination}" has been successfully submitted.`, 'info', newOutpassId);
 
-    return res.status(201).json({ message: 'Outpass submitted', id: result.lastInsertRowid });
+    return res.status(201).json({ message: 'Outpass submitted', id: newOutpassId });
   } catch (err) {
     console.error('Outpass POST error:', err);
     return res.status(500).json({ error: err.message || 'Server error' });
@@ -87,20 +110,21 @@ router.post('/', async (req, res) => {
 });
 
 // GET /api/outpass/:id
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   const user = verifyToken(req.headers['authorization']);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
   const db = getDb();
-  const op = db.prepare(`
+  const opRes = await db.query(`
     SELECT o.*, u.name as student_name, u.email as student_email, u.role as applicant_role, u.department,
            s.roll_no, s.year, s.semester, s.section
     FROM outpasses o
     JOIN users u ON o.user_id = u.id
     LEFT JOIN students s ON o.student_id = s.id
-    WHERE o.id = ?
-  `).get(req.params.id);
+    WHERE o.id = $1
+  `, [req.params.id]);
 
+  const op = opRes.rows[0];
   if (!op) return res.status(404).json({ error: 'Not found' });
   return res.json({ outpass: op });
 });
@@ -116,31 +140,33 @@ router.patch('/:id', async (req, res) => {
     if (!['approve', 'reject'].includes(action)) return res.status(400).json({ error: 'Invalid action' });
 
     const db = getDb();
-    const op = db.prepare(`
+    const opRes = await db.query(`
       SELECT o.*, u.id as student_user_id, u.name as student_name, u.department
       FROM outpasses o
       JOIN users u ON o.user_id = u.id
-      WHERE o.id = ?
-    `).get(outpassId);
+      WHERE o.id = $1
+    `, [outpassId]);
 
+    const op = opRes.rows[0];
     if (!op) return res.status(404).json({ error: 'Outpass not found' });
     const now = new Date().toISOString();
     const statusVal = action === 'approve' ? 'approved' : 'rejected';
 
     if (user.role === 'class_teacher') {
-      db.prepare(`UPDATE outpasses SET teacher_status=?, teacher_remarks=?, teacher_action_at=?, status=? WHERE id=?`)
-        .run(statusVal, remarks || '', now, action === 'approve' ? 'pending_hod' : 'rejected', op.id);
+      await db.query(`UPDATE outpasses SET teacher_status=$1, teacher_remarks=$2, teacher_action_at=$3, status=$4 WHERE id=$5`,
+        [statusVal, remarks || '', now, action === 'approve' ? 'pending_hod' : 'rejected', op.id]);
 
-      safeNotify(db, op.student_user_id,
+      await safeNotify(db, op.student_user_id,
         action === 'approve' ? 'Outpass Approved by Teacher' : 'Outpass Rejected by Teacher',
         action === 'approve' ? 'Your outpass request has been approved by your class teacher. Awaiting HOD approval.' : `Your outpass request was rejected by your class teacher. Reason: ${remarks || 'No reason given'}`,
         action === 'approve' ? 'info' : 'warning', op.id
       );
 
       if (action === 'approve') {
-        const hod = db.prepare(`SELECT id FROM users WHERE LOWER(TRIM(department))=LOWER(TRIM(?)) AND role='hod' LIMIT 1`).get(user.department || op.department);
+        const hodRes = await db.query(`SELECT id FROM users WHERE LOWER(TRIM(department))=LOWER(TRIM($1)) AND role='hod' LIMIT 1`, [user.department || op.department]);
+        const hod = hodRes.rows[0];
         if (hod) {
-          safeNotify(db, hod.id, 'Outpass Awaiting Your Approval', `${op.student_name}'s outpass has been approved by class teacher. Please review.`, 'action', op.id);
+          await safeNotify(db, hod.id, 'Outpass Awaiting Your Approval', `${op.student_name}'s outpass has been approved by class teacher. Please review.`, 'action', op.id);
         }
       }
     } else if (user.role === 'hod') {
@@ -148,19 +174,20 @@ router.patch('/:id', async (req, res) => {
         return res.status(400).json({ error: 'This outpass was rejected by the Class Teacher and cannot be processed by HOD.' });
       }
 
-      db.prepare(`UPDATE outpasses SET hod_status=?, hod_remarks=?, hod_action_at=?, status=? WHERE id=?`)
-        .run(statusVal, remarks || '', now, action === 'approve' ? 'pending_principal' : 'rejected', op.id);
+      await db.query(`UPDATE outpasses SET hod_status=$1, hod_remarks=$2, hod_action_at=$3, status=$4 WHERE id=$5`,
+        [statusVal, remarks || '', now, action === 'approve' ? 'pending_principal' : 'rejected', op.id]);
 
-      safeNotify(db, op.student_user_id,
+      await safeNotify(db, op.student_user_id,
         action === 'approve' ? 'Outpass Approved by HOD' : 'Outpass Rejected by HOD',
         action === 'approve' ? `Your outpass to ${op.destination} has been approved by the HOD. Awaiting Principal approval.` : `Your outpass was rejected by the HOD. Reason: ${remarks || 'No reason given'}`,
         action === 'approve' ? 'info' : 'warning', op.id
       );
 
       if (action === 'approve') {
-        const principal = db.prepare(`SELECT id FROM users WHERE role='principal' LIMIT 1`).get();
+        const principalRes = await db.query(`SELECT id FROM users WHERE role='principal' LIMIT 1`);
+        const principal = principalRes.rows[0];
         if (principal) {
-          safeNotify(db, principal.id, 'Outpass Awaiting Your Approval', `${op.student_name}'s outpass has been approved by HOD. Please review.`, 'action', op.id);
+          await safeNotify(db, principal.id, 'Outpass Awaiting Your Approval', `${op.student_name}'s outpass has been approved by HOD. Please review.`, 'action', op.id);
         }
       }
     } else if (user.role === 'principal') {
@@ -168,10 +195,10 @@ router.patch('/:id', async (req, res) => {
         return res.status(400).json({ error: 'This outpass was rejected at an earlier stage and cannot be approved by Principal.' });
       }
 
-      db.prepare(`UPDATE outpasses SET principal_status=?, principal_remarks=?, principal_action_at=?, status=? WHERE id=?`)
-        .run(statusVal, remarks || '', now, action === 'approve' ? 'approved' : 'rejected', op.id);
+      await db.query(`UPDATE outpasses SET principal_status=$1, principal_remarks=$2, principal_action_at=$3, status=$4 WHERE id=$5`,
+        [statusVal, remarks || '', now, action === 'approve' ? 'approved' : 'rejected', op.id]);
 
-      safeNotify(db, op.student_user_id,
+      await safeNotify(db, op.student_user_id,
         action === 'approve' ? '✅ Outpass Fully Approved!' : '❌ Outpass Rejected by Principal',
         action === 'approve' ? `Your outpass to ${op.destination} has been fully approved by Teacher, HOD, and Principal! Show your Gate Pass QR.` : `Your outpass was rejected by the Principal. Reason: ${remarks || 'No reason given'}`,
         action === 'approve' ? 'success' : 'warning', op.id

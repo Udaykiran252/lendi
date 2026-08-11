@@ -236,7 +236,7 @@ export default function OutpassPage() {
           </div>
 
           <div className="stats">
-            {[{ n: stats.total, l: 'Total', c: '#fff' }, { n: stats.approved, l: 'Approved', c: '#4ade80' }, { n: stats.pending, l: 'Pending', c: '#fbbf24' }, { n: stats.rejected, l: 'Rejected', c: '#f87171' }].map((s, i) => (
+            {[{ n: stats.total, l: 'Total', c: '#0d2340' }, { n: stats.approved, l: 'Approved', c: '#4ade80' }, { n: stats.pending, l: 'Pending', c: '#fbbf24' }, { n: stats.rejected, l: 'Rejected', c: '#f87171' }].map((s, i) => (
               <div key={i} className="sc"><div className="sc-n" style={{ color: s.c }}>{s.n}</div><div className="sc-l">{s.l}</div></div>
             ))}
           </div>
@@ -315,8 +315,29 @@ export default function OutpassPage() {
               <div className="field"><label className="lbl">Reason *</label><textarea className="textarea" placeholder="Describe your reason for going out..." value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} required /></div>
               <div className="field"><label className="lbl">Destination *</label><input className="inp" type="text" placeholder="Where are you going?" value={form.destination} onChange={e => setForm({ ...form, destination: e.target.value })} required /></div>
               <div className="two">
-                <div className="field"><label className="lbl">From Date *</label><input className="inp" type="date" value={form.from_date} onChange={e => setForm({ ...form, from_date: e.target.value })} required /></div>
-                <div className="field"><label className="lbl">To Date *</label><input className="inp" type="date" value={form.to_date} onChange={e => setForm({ ...form, to_date: e.target.value })} required /></div>
+                <div className="field">
+                  <label className="lbl">From Date *</label>
+                  <input
+                    className="inp"
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    value={form.from_date}
+                    onChange={e => setForm({ ...form, from_date: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="field">
+                  <label className="lbl">To Date *</label>
+                  <input
+                    className="inp"
+                    type="date"
+                    min={form.from_date || new Date().toISOString().split("T")[0]}
+                    value={form.to_date}
+                    onChange={e => setForm({ ...form, to_date: e.target.value })}
+                    required
+                  />
+                </div>
               </div>
               <div className="two">
                 <div className="field"><label className="lbl">From Time</label><input className="inp" type="time" value={form.from_time} onChange={e => setForm({ ...form, from_time: e.target.value })} /></div>

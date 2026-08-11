@@ -3,25 +3,25 @@ const router = express.Router();
 const { getDb } = require('../lib/db');
 const { verifyToken } = require('../lib/auth');
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const user = verifyToken(req.headers['authorization']);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
   const db = getDb();
-  const notifications = db.prepare('SELECT * FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 50').all(user.userId);
-  return res.json({ notifications });
+  const notificationsRes = await db.query('SELECT * FROM notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT 50', [user.userId]);
+  return res.json({ notifications: notificationsRes.rows });
 });
 
-router.patch('/', (req, res) => {
+router.patch('/', async (req, res) => {
   const user = verifyToken(req.headers['authorization']);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
   const { id } = req.body || {};
   const db = getDb();
   if (id === 'all') {
-    db.prepare('UPDATE notifications SET read=1 WHERE user_id=?').run(user.userId);
+    await db.query('UPDATE notifications SET read=1 WHERE user_id=$1', [user.userId]);
   } else {
-    db.prepare('UPDATE notifications SET read=1 WHERE id=? AND user_id=?').run(id, user.userId);
+    await db.query('UPDATE notifications SET read=1 WHERE id=$1 AND user_id=$2', [id, user.userId]);
   }
   return res.json({ message: 'Marked as read' });
 });

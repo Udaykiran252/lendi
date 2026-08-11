@@ -9,19 +9,19 @@ function isAdmin(req) {
   return user && user.role === 'admin';
 }
 
-router.get('/users', (req, res) => {
+router.get('/users', async (req, res) => {
   if (!isAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
 
   const db = getDb();
   try {
-    const users = db.prepare(`
+    const usersRes = await db.query(`
       SELECT u.id, u.name, u.email, u.role, u.department, u.created_at,
              s.roll_no, s.year, s.semester, s.section
       FROM users u
       LEFT JOIN students s ON u.id = s.user_id
       ORDER BY u.role, u.name
-    `).all();
-    return res.json({ users });
+    `);
+    return res.json({ users: usersRes.rows });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Database error' });
@@ -39,30 +39,45 @@ router.post('/users', async (req, res) => {
     }
 
     const e = email.toLowerCase().trim();
-    if (db.prepare('SELECT id FROM users WHERE email=?').get(e)) {
+    const existingUserRes = await db.query('SELECT id FROM users WHERE email=$1', [e]);
+    if (existingUserRes.rows[0]) {
       return res.status(409).json({ error: 'Email already registered' });
     }
 
     const hash = await bcrypt.hash(password, 10);
     let newUserId;
-    db.transaction(() => {
-      const ur = db.prepare('INSERT INTO users(email,password,name,role,department) VALUES(?,?,?,?,?)').run(
-        e, hash, name.trim(), role, department || null
+
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      const ur = await client.query(
+        'INSERT INTO users(email,password,name,role,department) VALUES($1,$2,$3,$4,$5) RETURNING id',
+        [e, hash, name.trim(), role, department || null]
       );
-      newUserId = ur.lastInsertRowid;
+      newUserId = ur.rows[0].id;
 
       if (role === 'student') {
         if (!roll_no || !year || !semester) {
           throw new Error('Student roll number, year and semester are required');
         }
-        if (db.prepare('SELECT id FROM students WHERE roll_no=?').get(roll_no.toUpperCase())) {
+        const existingStudentRes = await client.query('SELECT id FROM students WHERE roll_no=$1', [roll_no.toUpperCase()]);
+        if (existingStudentRes.rows[0]) {
           throw new Error('Roll number already registered');
         }
-        db.prepare('INSERT INTO students(user_id,roll_no,year,semester,section) VALUES(?,?,?,?,?)').run(
-          newUserId, roll_no.toUpperCase(), parseInt(year), parseInt(semester), section || 'A'
+        await client.query(
+          'INSERT INTO students(user_id,roll_no,year,semester,section) VALUES($1,$2,$3,$4,$5)',
+          [newUserId, roll_no.toUpperCase(), parseInt(year), parseInt(semester), section || 'A']
         );
       }
-    })();
+
+      await client.query('COMMIT');
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      throw txErr;
+    } finally {
+      client.release();
+    }
 
     return res.status(201).json({ message: 'User created successfully', userId: newUserId });
   } catch (err) {
@@ -71,7 +86,7 @@ router.post('/users', async (req, res) => {
   }
 });
 
-router.delete('/users', (req, res) => {
+router.delete('/users', async (req, res) => {
   if (!isAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
 
   const db = getDb();
@@ -79,11 +94,19 @@ router.delete('/users', (req, res) => {
     const userId = req.query.id;
     if (!userId) return res.status(400).json({ error: 'User ID required' });
 
-    db.transaction(() => {
-      db.prepare('DELETE FROM students WHERE user_id = ?').run(userId);
-      db.prepare('DELETE FROM notifications WHERE user_id = ?').run(userId);
-      db.prepare('DELETE FROM users WHERE id = ?').run(userId);
-    })();
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM students WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM notifications WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM users WHERE id = $1', [userId]);
+      await client.query('COMMIT');
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      throw txErr;
+    } finally {
+      client.release();
+    }
 
     return res.json({ message: 'User deleted successfully' });
   } catch (err) {

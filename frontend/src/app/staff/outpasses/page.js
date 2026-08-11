@@ -5,10 +5,10 @@ import Sidebar from '@/components/Sidebar';
 import QRCode from 'qrcode';
 
 const ST = {
-  pending_hod:       { label:'Awaiting HOD',       color:'#fbbf24', bg:'rgba(251,191,36,.12)',  ico:'⏳', step:1 },
-  pending_principal: { label:'Awaiting Principal', color:'#a78bfa', bg:'rgba(167,139,250,.12)', ico:'⏳', step:2 },
-  approved:          { label:'Fully Approved',     color:'#4ade80', bg:'rgba(74,222,128,.12)',  ico:'✅', step:3 },
-  rejected:          { label:'Rejected',           color:'#f87171', bg:'rgba(248,113,113,.12)', ico:'❌', step:0 },
+  pending_hod: { label: 'Awaiting HOD', color: '#fbbf24', bg: 'rgba(251,191,36,.12)', ico: '⏳', step: 1 },
+  pending_principal: { label: 'Awaiting Principal', color: '#a78bfa', bg: 'rgba(167,139,250,.12)', ico: '⏳', step: 2 },
+  approved: { label: 'Fully Approved', color: '#4ade80', bg: 'rgba(74,222,128,.12)', ico: '✅', step: 3 },
+  rejected: { label: 'Rejected', color: '#f87171', bg: 'rgba(248,113,113,.12)', ico: '❌', step: 0 },
 };
 
 export default function StaffOutpassPage() {
@@ -19,16 +19,16 @@ export default function StaffOutpassPage() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ reason:'', destination:'', from_date:'', to_date:'', from_time:'', to_time:'' });
+  const [form, setForm] = useState({ reason: '', destination: '', from_date: '', to_date: '', from_time: '', to_time: '' });
   const [qrModal, setQrModal] = useState(null); // { qrUrl, outpass }
   const [user, setUser] = useState(null);
 
-  const showToast = (msg, type='ok') => { setToast({msg, type}); setTimeout(()=>setToast(''), 3500); };
+  const showToast = (msg, type = 'ok') => { setToast({ msg, type }); setTimeout(() => setToast(''), 3500); };
 
   const load = async () => {
     const token = localStorage.getItem('token');
     const res = await fetch('/api/outpass', { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) { const d = await res.json(); setOutpasses(d.outpasses||[]); }
+    if (res.ok) { const d = await res.json(); setOutpasses(d.outpasses || []); }
     setLoading(false);
   };
 
@@ -73,11 +73,11 @@ export default function StaffOutpassPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.reason||!form.destination||!form.from_date||!form.to_date) { setError('Please fill all required fields'); return; }
+    if (!form.reason || !form.destination || !form.from_date || !form.to_date) { setError('Please fill all required fields'); return; }
     setSubmitting(true); setError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/outpass', { method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify(form) });
+      const res = await fetch('/api/outpass', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(form) });
       let data = {};
       try {
         data = await res.json();
@@ -89,7 +89,7 @@ export default function StaffOutpassPage() {
           ? '✅ Outpass submitted to Principal for approval!'
           : '✅ Outpass submitted to HOD for approval!';
         showToast(toastMsg, 'ok');
-        setShowForm(false); setForm({ reason:'', destination:'', from_date:'', to_date:'', from_time:'', to_time:'' });
+        setShowForm(false); setForm({ reason: '', destination: '', from_date: '', to_date: '', from_time: '', to_time: '' });
         load();
       } else {
         setError(data.error || 'Submission failed');
@@ -104,9 +104,9 @@ export default function StaffOutpassPage() {
 
   const stats = {
     total: outpasses.length,
-    approved: outpasses.filter(o=>o.status==='approved').length,
-    pending: outpasses.filter(o=>o.status==='pending_principal').length,
-    rejected: outpasses.filter(o=>o.status==='rejected').length
+    approved: outpasses.filter(o => o.status === 'approved').length,
+    pending: outpasses.filter(o => o.status === 'pending_principal').length,
+    rejected: outpasses.filter(o => o.status === 'rejected').length
   };
 
   const roleColor = user?.role === 'hod' ? '#fbbf24' : '#4ade80';
@@ -185,18 +185,18 @@ export default function StaffOutpassPage() {
               <div className="page-title">🎫 Staff Outpass Portal</div>
               <div className="page-sub">Request gate passes directly to the Principal and check status</div>
             </div>
-            <button className="btn-apply" onClick={()=>setShowForm(true)}>
-              <span style={{fontSize:16}}>+</span> Apply for Outpass
+            <button className="btn-apply" onClick={() => setShowForm(true)}>
+              <span style={{ fontSize: 16 }}>+</span> Apply for Outpass
             </button>
           </div>
 
           <div className="stats">
             {[
-              { l:'Total Applications', v:loading?'…':stats.total },
-              { l:'Pending Principal', v:loading?'…':stats.pending },
-              { l:'Fully Approved', v:loading?'…':stats.approved },
-              { l:'Rejected Requests', v:loading?'…':stats.rejected },
-            ].map((s,i)=>(
+              { l: 'Total Applications', v: loading ? '…' : stats.total },
+              { l: 'Pending Principal', v: loading ? '…' : stats.pending },
+              { l: 'Fully Approved', v: loading ? '…' : stats.approved },
+              { l: 'Rejected Requests', v: loading ? '…' : stats.rejected },
+            ].map((s, i) => (
               <div key={i} className="sc">
                 <span className="sc-lbl">{s.l}</span>
                 <span className="sc-val">{s.v}</span>
@@ -206,54 +206,54 @@ export default function StaffOutpassPage() {
 
           <div className="layout">
             <div className="card">
-              <div style={{fontSize:14,fontWeight:800,marginBottom:'1.2rem',color:'rgba(255,255,255,.85)'}}>📋 Outpass Requests Log</div>
+              <div style={{ fontSize: 14, fontWeight: 800, marginBottom: '1.2rem', color: 'rgba(255,255,255,.85)' }}>📋 Outpass Requests Log</div>
               {loading ? <div className="empty">Loading outpasses…</div> :
-               outpasses.length === 0 ? <div className="empty">🎫 No outpasses applied yet. Click "Apply for Outpass" to start.</div> :
-               <div className="op-list">
-                 {outpasses.map(op => {
-                   const st = ST[op.status] || ST.pending_principal;
-                   return (
-                     <div key={op.id} className="op-card">
-                       <div className="op-left">
-                         <div className="op-hdr">
-                           <span className="op-reason">{op.reason}</span>
-                           <span className="status-badge" style={{color:st.color,background:st.bg}}>{st.ico} {st.label}</span>
-                         </div>
-                         <div className="grid-det">
-                           <div className="det-item"><span className="det-l">Destination</span><span className="det-v">{op.destination}</span></div>
-                           <div className="det-item"><span className="det-l">From</span><span className="det-v">{op.from_date} · {op.from_time||'—'}</span></div>
-                           <div className="det-item"><span className="det-l">To</span><span className="det-v">{op.to_date} · {op.to_time||'—'}</span></div>
-                           <div className="det-item"><span className="det-l">Applied On</span><span className="det-v">{new Date(op.created_at).toLocaleDateString('en-IN')}</span></div>
-                         </div>
-                          <div className="track-row" style={{display:'flex',flexWrap:'wrap',gap:'10px'}}>
-                            {user?.role === 'class_teacher' && (
-                              <div style={{marginRight:15}}>
-                                👨‍💼 <strong>HOD Status:</strong>{' '}
-                                <span style={{color:op.hod_status==='approved'?'#4ade80':op.hod_status==='rejected'?'#f87171':'#fbbf24',fontWeight:700}}>
-                                  {op.hod_status.toUpperCase()}
+                outpasses.length === 0 ? <div className="empty">🎫 No outpasses applied yet. Click "Apply for Outpass" to start.</div> :
+                  <div className="op-list">
+                    {outpasses.map(op => {
+                      const st = ST[op.status] || ST.pending_principal;
+                      return (
+                        <div key={op.id} className="op-card">
+                          <div className="op-left">
+                            <div className="op-hdr">
+                              <span className="op-reason">{op.reason}</span>
+                              <span className="status-badge" style={{ color: st.color, background: st.bg }}>{st.ico} {st.label}</span>
+                            </div>
+                            <div className="grid-det">
+                              <div className="det-item"><span className="det-l">Destination</span><span className="det-v">{op.destination}</span></div>
+                              <div className="det-item"><span className="det-l">From</span><span className="det-v">{op.from_date} · {op.from_time || '—'}</span></div>
+                              <div className="det-item"><span className="det-l">To</span><span className="det-v">{op.to_date} · {op.to_time || '—'}</span></div>
+                              <div className="det-item"><span className="det-l">Applied On</span><span className="det-v">{new Date(op.created_at).toLocaleDateString('en-IN')}</span></div>
+                            </div>
+                            <div className="track-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                              {user?.role === 'class_teacher' && (
+                                <div style={{ marginRight: 15 }}>
+                                  👨‍💼 <strong>HOD Status:</strong>{' '}
+                                  <span style={{ color: op.hod_status === 'approved' ? '#4ade80' : op.hod_status === 'rejected' ? '#f87171' : '#fbbf24', fontWeight: 700 }}>
+                                    {op.hod_status.toUpperCase()}
+                                  </span>
+                                  {op.hod_remarks && <span style={{ color: 'rgba(255,255,255,.5)' }}> · Remarks: "{op.hod_remarks}"</span>}
+                                </div>
+                              )}
+                              <div>
+                                👑 <strong>Principal Status:</strong>{' '}
+                                <span style={{ color: op.principal_status === 'approved' ? '#4ade80' : op.principal_status === 'rejected' ? '#f87171' : '#a78bfa', fontWeight: 700 }}>
+                                  {op.principal_status.toUpperCase()}
                                 </span>
-                                {op.hod_remarks && <span style={{color:'rgba(255,255,255,.5)'}}> · Remarks: "{op.hod_remarks}"</span>}
+                                {op.principal_remarks && <span style={{ color: 'rgba(255,255,255,.5)' }}> · Remarks: "{op.principal_remarks}"</span>}
                               </div>
-                            )}
-                            <div>
-                              👑 <strong>Principal Status:</strong>{' '}
-                              <span style={{color:op.principal_status==='approved'?'#4ade80':op.principal_status==='rejected'?'#f87171':'#a78bfa',fontWeight:700}}>
-                                {op.principal_status.toUpperCase()}
-                              </span>
-                              {op.principal_remarks && <span style={{color:'rgba(255,255,255,.5)'}}> · Remarks: "{op.principal_remarks}"</span>}
                             </div>
                           </div>
-                       </div>
-                       {(op.principal_status==='approved' || op.status==='approved') && (
-                         <button className="qr-btn" onClick={()=>generateQR(op)}>
-                           <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="10" y="10" width="4" height="4" rx=".5" stroke="currentColor" strokeWidth="1.2"/></svg>
-                           Gate Pass QR
-                         </button>
-                       )}
-                     </div>
-                   );
-                 })}
-               </div>
+                          {(op.principal_status === 'approved' || op.status === 'approved') && (
+                            <button className="qr-btn" onClick={() => generateQR(op)}>
+                              <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2" /><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2" /><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2" /><rect x="10" y="10" width="4" height="4" rx=".5" stroke="currentColor" strokeWidth="1.2" /></svg>
+                              Gate Pass QR
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
               }
             </div>
           </div>
@@ -271,38 +271,61 @@ export default function StaffOutpassPage() {
                 <div className="field full">
                   <label className="lbl">Outpass Reason</label>
                   <input className="inp" required placeholder="e.g. Official Duty, Personal Work" value={form.reason}
-                    onChange={e=>setForm({...form,reason:e.target.value})}/>
+                    onChange={e => setForm({ ...form, reason: e.target.value })} />
                 </div>
                 <div className="field full">
                   <label className="lbl">Destination</label>
                   <input className="inp" required placeholder="e.g. Vizianagaram Town, Bank" value={form.destination}
-                    onChange={e=>setForm({...form,destination:e.target.value})}/>
+                    onChange={e => setForm({ ...form, destination: e.target.value })} />
                 </div>
                 <div className="field">
                   <label className="lbl">From Date</label>
-                  <input className="inp" type="date" required value={form.from_date}
-                    onChange={e=>setForm({...form,from_date:e.target.value})}/>
+                  <input
+                    className="inp"
+                    type="date"
+                    required
+                    min={new Date().toISOString().split("T")[0]}
+                    value={form.from_date}
+                    onChange={e => setForm({ ...form, from_date: e.target.value })}
+                  />
                 </div>
+
                 <div className="field">
                   <label className="lbl">To Date</label>
-                  <input className="inp" type="date" required value={form.to_date}
-                    onChange={e=>setForm({...form,to_date:e.target.value})}/>
+                  <input
+                    className="inp"
+                    type="date"
+                    required
+                    min={form.from_date || new Date().toISOString().split("T")[0]}
+                    value={form.to_date}
+                    onChange={e => setForm({ ...form, to_date: e.target.value })}
+                  />
                 </div>
+
                 <div className="field">
                   <label className="lbl">From Time (optional)</label>
-                  <input className="inp" type="time" value={form.from_time}
-                    onChange={e=>setForm({...form,from_time:e.target.value})}/>
+                  <input
+                    className="inp"
+                    type="time"
+                    value={form.from_time}
+                    onChange={e => setForm({ ...form, from_time: e.target.value })}
+                  />
                 </div>
+
                 <div className="field">
                   <label className="lbl">To Time (optional)</label>
-                  <input className="inp" type="time" value={form.to_time}
-                    onChange={e=>setForm({...form,to_time:e.target.value})}/>
+                  <input
+                    className="inp"
+                    type="time"
+                    value={form.to_time}
+                    onChange={e => setForm({ ...form, to_time: e.target.value })}
+                  />
                 </div>
               </div>
               <div className="modal-btns">
-                <button type="button" className="btn-c" onClick={()=>setShowForm(false)}>Cancel</button>
+                <button type="button" className="btn-c" onClick={() => setShowForm(false)}>Cancel</button>
                 <button type="submit" className="btn-s" disabled={submitting}>
-                  {submitting?'Submitting…':'Submit Request'}
+                  {submitting ? 'Submitting…' : 'Submit Request'}
                 </button>
               </div>
             </form>
@@ -313,23 +336,23 @@ export default function StaffOutpassPage() {
       {/* QR Modal Overlay */}
       {qrModal && (
         <div className="modal-overlay">
-          <div className="modal" style={{maxWidth:400}}>
-            <h2 className="modal-t" style={{textAlign:'center'}}>Gate Pass Approved</h2>
+          <div className="modal" style={{ maxWidth: 400 }}>
+            <h2 className="modal-t" style={{ textAlign: 'center' }}>Gate Pass Approved</h2>
             <div className="qr-modal-body">
               <div className="qr-box">
-                <img src={qrModal.qrUrl} alt="Gate Pass QR" width={220} height={220}/>
+                <img src={qrModal.qrUrl} alt="Gate Pass QR" width={220} height={220} />
               </div>
-              <div style={{fontSize:13.5,color:'rgba(255,255,255,.8)',marginBottom:'1.5rem',lineHeight:1.6}}>
-                <div style={{fontWeight:800,fontSize:15}}>{qrModal.staffName}</div>
+              <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,.8)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                <div style={{ fontWeight: 800, fontSize: 15 }}>{qrModal.staffName}</div>
                 <div>{qrModal.role} · Dept: {qrModal.department}</div>
-                <div style={{color:'rgba(255,255,255,.4)',fontSize:11.5,marginTop:4}}>Outpass ID: #{qrModal.outpass.id}</div>
+                <div style={{ color: 'rgba(255,255,255,.4)', fontSize: 11.5, marginTop: 4 }}>Outpass ID: #{qrModal.outpass.id}</div>
               </div>
-              <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                <button className="qr-download" onClick={()=>{
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button className="qr-download" onClick={() => {
                   const a = document.createElement('a'); a.href = qrModal.qrUrl;
                   a.download = `staff_outpass_${qrModal.outpass.id}_qr.png`; a.click();
                 }}>📥 Download Gate Pass</button>
-                <button className="btn-c" style={{height:40}} onClick={()=>setQrModal(null)}>Close</button>
+                <button className="btn-c" style={{ height: 40 }} onClick={() => setQrModal(null)}>Close</button>
               </div>
             </div>
           </div>
