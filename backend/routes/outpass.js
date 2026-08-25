@@ -207,6 +207,26 @@ router.patch('/:id', async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to take action' });
     }
 
+    // Emit real-time Socket.IO event to affected student's room after successful DB update
+    try {
+      const io = req.app.get('io');
+      if (io && op.student_user_id) {
+        let updatedStatus = 'rejected';
+        if (action === 'approve') {
+          if (user.role === 'class_teacher') updatedStatus = 'pending_hod';
+          else if (user.role === 'hod') updatedStatus = 'pending_principal';
+          else if (user.role === 'principal') updatedStatus = 'approved';
+        }
+        io.to(`user_${op.student_user_id}`).emit('outpass_updated', {
+          outpassId: op.id,
+          action,
+          status: updatedStatus
+        });
+      }
+    } catch (socketErr) {
+      console.error('Socket.IO emission error:', socketErr);
+    }
+
     return res.json({ message: `Outpass ${statusVal}` });
   } catch (err) {
     console.error('PATCH /api/outpass error:', err);

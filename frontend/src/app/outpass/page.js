@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import QRCode from 'qrcode';
+import { io } from 'socket.io-client';
 
 const ST = {
   pending_teacher: { label: 'Awaiting Teacher', color: '#fbbf24', bg: 'rgba(251,191,36,.12)', ico: '⏳', step: 1 },
@@ -93,6 +94,37 @@ export default function OutpassPage() {
     const token = localStorage.getItem('token');
     if (!token) { router.push('/login'); return; }
     load();
+
+    let socket;
+    try {
+      socket = io('http://localhost:5000', {
+        auth: { token },
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 5
+      });
+
+      socket.on('connect', () => {
+        console.log('⚡ Socket.IO real-time connection established');
+      });
+
+      socket.on('outpass_updated', (data) => {
+        console.log('📢 Real-time outpass status update received:', data);
+        load();
+      });
+
+      socket.on('connect_error', (err) => {
+        console.warn('Socket.IO connection notice:', err?.message || err);
+      });
+    } catch (err) {
+      console.warn('Failed to initialize Socket.IO client connection:', err);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('outpass_updated');
+        socket.disconnect();
+      }
+    };
   }, [load, router]);
 
   const handleSubmit = async (e) => {
