@@ -10,10 +10,13 @@ let sqliteDb;
 function getPool() {
   if (!pool) {
     const connectionString = process.env.DATABASE_URL;
+    const isCloudDb = process.env.DB_SSL === 'true' || 
+                      process.env.NODE_ENV === 'production' || 
+                      (connectionString && (connectionString.includes('neon.tech') || connectionString.includes('supabase') || connectionString.includes('postgres.database.azure.com') || connectionString.includes('rds.amazonaws.com')));
     const config = connectionString
       ? {
           connectionString,
-          ssl: process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+          ssl: isCloudDb ? { rejectUnauthorized: false } : false,
         }
       : {
           host: process.env.PGHOST || 'localhost',

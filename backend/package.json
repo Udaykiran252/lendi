@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "migrate:pg": "node scripts/migrate-to-pg.js"
+    "migrate:pg": "node scripts/migrate-to-pg.js",
+    "migrate:supabase": "node scripts/migrate-neon-to-supabase.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
